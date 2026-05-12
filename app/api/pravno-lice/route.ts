@@ -35,9 +35,13 @@ export async function POST(req: Request) {
             }
         }
 
+        await pool.query(`
+            INSERT INTO PravnoLice (naziv, pib, maticni_broj)
+            VALUES ($1, $2, $3)
+        `, [naziv, pib, maticni_broj || null]);
 
         // Get the inserted ID using SCOPE_IDENTITY()
-        const idResult = await pool.query('SELECT SCOPE_IDENTITY() as id');
+        const idResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
         const pravnoLiceId = idResult.rows[0].id;
 
         // Create new risk assessment for this legal entity
@@ -47,7 +51,7 @@ export async function POST(req: Request) {
             `, [`Procena rizika - ${naziv}`, pravnoLiceId, 'u_toku']);
 
         // Get the inserted procena ID
-        const procenaIdResult = await pool.query('SELECT SCOPE_IDENTITY() as id');
+        const procenaIdResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
         const procenaId = procenaIdResult.rows[0].id;
 
         return NextResponse.json({
@@ -134,10 +138,13 @@ export async function GET(req: Request) {
 
             const pravnoLice = pravnaLicaMap.get(row.id);
 
+            const procenaId = row.procenaId ?? row.procenaid;
+            const uslugaId = row.uslugaId ?? row.uslugaid;
+
             // Dodaj procenu ako postoji i nije već dodana
-            if (row.procenaid && !pravnoLice.procene.find((p: { id: number }) => p.id === row.procenaid)) {
+            if (procenaId && !pravnoLice.procene.find((p: { id: number }) => p.id === procenaId)) {
                 pravnoLice.procene.push({
-                    id: row.procenaid,
+                    id: procenaId,
                     datum: row.datum,
                     status: row.status,
                     pravnoLiceId: row.id
@@ -145,9 +152,9 @@ export async function GET(req: Request) {
             }
 
             // Dodaj uslugu ako postoji i nije već dodana
-            if (row.uslugaid && !pravnoLice.usluge.find((u: { id: number }) => u.id === row.uslugaid)) {
+            if (uslugaId && !pravnoLice.usluge.find((u: { id: number }) => u.id === uslugaId)) {
                 pravnoLice.usluge.push({
-                    id: row.uslugaid,
+                    id: uslugaId,
                     naziv_usluge: row.naziv_usluge,
                     datum_izrade: row.datum_izrade,
                     opis: row.usluga_opis
@@ -191,7 +198,7 @@ export async function PUT(req: Request) {
         `, [pravnoLiceId, naziv_usluge, datum_izrade || new Date().toISOString().split('T')[0], opis || null]);
 
         // Get the inserted ID
-        const idResult = await pool.query('SELECT SCOPE_IDENTITY() as id');
+        const idResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
         const uslugaId = idResult.rows[0].id;
 
         return NextResponse.json({

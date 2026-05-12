@@ -182,7 +182,7 @@ export default function PrilogMViewer({ procenaId, title = "ПРИLOG М - Ни�
                                 ЗАХТЕВИ ЗА ПРОЦЕНУ РИЗИКА
                             </th>
                             <th className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800" style={{ width: '50px' }}>
-                                ВО
+                                Сво
                             </th>
                             <th className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800" style={{ width: '50px' }}>
                                 Изл.
@@ -194,13 +194,13 @@ export default function PrilogMViewer({ procenaId, title = "ПРИLOG М - Ни�
                                 Вер.
                             </th>
                             <th className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800" style={{ width: '50px' }}>
-                                Посл.
+                                Штете
                             </th>
                             <th className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800" style={{ width: '50px' }}>
-                                Штет.
+                                Критичност
                             </th>
                             <th className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800" style={{ width: '50px' }}>
-                                Крит.
+                                Последице
                             </th>
                             <th className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800" style={{ width: '60px' }}>
                                 Ниво<br />риз.

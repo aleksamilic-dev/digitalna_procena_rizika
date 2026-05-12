@@ -19,24 +19,47 @@ export async function POST(
       return NextResponse.json({ error: "Procena ne postoji" }, { status: 404 });
     }
 
-    // Upsert finansijskih podataka
-    await pool.query(`
-      INSERT INTO FinancialData (procenaId, poslovniPrihodi, vrednostImovine, delatnost, stvarnaSteta, createdAt, updatedAt)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ON CONFLICT (procenaId) 
-      DO UPDATE SET 
-        poslovniPrihodi = EXCLUDED.poslovniPrihodi,
-        vrednostImovine = EXCLUDED.vrednostImovine,
-        delatnost = EXCLUDED.delatnost,
-        stvarnaSteta = EXCLUDED.stvarnaSteta,
-        updatedAt = CURRENT_TIMESTAMP
-    `, [
-      procenaId,
-      financialData.poslovniPrihodi,
-      financialData.vrednostImovine,
-      financialData.delatnost,
-      financialData.stvarnaSteta
-    ]);
+    const existingFinancialData = await pool.query(
+      'SELECT id FROM FinancialData WHERE procenaId = $1',
+      [procenaId]
+    );
+
+    if (existingFinancialData.rows.length > 0) {
+      await pool.query(`
+        UPDATE FinancialData
+        SET poslovniPrihodi = $1,
+            vrednostImovine = $2,
+            delatnost = $3,
+            stvarnaSteta = $4,
+            updatedAt = CURRENT_TIMESTAMP
+        WHERE procenaId = $5
+      `, [
+        financialData.poslovniPrihodi,
+        financialData.vrednostImovine,
+        financialData.delatnost,
+        financialData.stvarnaSteta,
+        procenaId
+      ]);
+    } else {
+      await pool.query(`
+        INSERT INTO FinancialData (
+          procenaId,
+          poslovniPrihodi,
+          vrednostImovine,
+          delatnost,
+          stvarnaSteta,
+          createdAt,
+          updatedAt
+        )
+        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `, [
+        procenaId,
+        financialData.poslovniPrihodi,
+        financialData.vrednostImovine,
+        financialData.delatnost,
+        financialData.stvarnaSteta
+      ]);
+    }
 
     return NextResponse.json({ success: true });
 

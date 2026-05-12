@@ -44,9 +44,9 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
               <div className="mb-4 p-3 bg-white rounded border">
                 <h4 className="font-semibold text-gray-800 mb-2">Kolona 4: Izloženost (I)</h4>
                 <div className="text-sm text-gray-800">
-                  <p><strong>Formula:</strong> I = (Si + VO)/2</p>
-                  <p><strong>Kalkulacija:</strong> I = (3 + {data.velicinaOpasnosti})/2 = {data.izlozenost}</p>
-                  <p><strong>Objašnjenje:</strong> Si = stepen izloženosti (default 3), VO = veličina opasnosti</p>
+                  <p><strong>Formula:</strong> I = (Si + Svo)/2</p>
+                  <p><strong>Kalkulacija:</strong> I = (Si + {data.velicinaOpasnosti})/2 = {data.izlozenost}</p>
+                  <p><strong>Objašnjenje:</strong> Si = stepen izloženosti (1-5, Prilog N tabela N.3), Svo = stepen veličine opasnosti (1-5, Prilog Lj kol. 3)</p>
                 </div>
               </div>
 
@@ -54,9 +54,9 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
               <div className="mb-4 p-3 bg-white rounded border">
                 <h4 className="font-semibold text-gray-800 mb-2">Kolona 5: Ranjivost (R)</h4>
                 <div className="text-sm text-gray-800">
-                  <p><strong>Formula:</strong> R = (Sr + VO)/2</p>
-                  <p><strong>Kalkulacija:</strong> R = (3 + {data.velicinaOpasnosti})/2 = {data.ranjivost}</p>
-                  <p><strong>Objašnjenje:</strong> Sr = stepen ranjivosti (default 3), VO = veličina opasnosti</p>
+                  <p><strong>Formula:</strong> R = (Sr + Svo)/2</p>
+                  <p><strong>Kalkulacija:</strong> R = (Sr + {data.velicinaOpasnosti})/2 = {data.ranjivost}</p>
+                  <p><strong>Objašnjenje:</strong> Sr = stepen ranjivosti (1-5, Prilog N tabela N.4), Svo = stepen veličine opasnosti (1-5, Prilog Lj kol. 3)</p>
                 </div>
               </div>
 
@@ -67,12 +67,16 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
                   <p><strong>Formula:</strong> V = I × R (iz matrice N.5)</p>
                   <p><strong>Kalkulacija:</strong> Ranjivost {data.ranjivost} × Izloženost {data.izlozenost} = {data.verovatnoca}</p>
                   <p><strong>Matrica:</strong> Prilog N, tabela N.5</p>
+                  <div className="mt-2 p-2 bg-blue-50 border-l-4 border-blue-400 text-xs">
+                    <p className="mb-1"><strong>НАПОМЕНА 1:</strong> Према упутству В = И (кол. 4) # Р (кол. 5)</p>
+                    <p><strong>НАПОМЕНА 2:</strong> Добијене вредности се заокружују на целе бројеве.</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Kolona 8: Šteta */}
+              {/* Kolona 7: Štete */}
               <div className="mb-4 p-3 bg-white rounded border">
-                <h4 className="font-semibold text-gray-800 mb-2">Kolona 8: Šteta (Š)</h4>
+                <h4 className="font-semibold text-gray-800 mb-2">Kolona 7: Štete (Š)</h4>
                 <div className="text-sm text-gray-800">
                   <p><strong>Formula:</strong> Š = (SŠ + VMŠ)/2</p>
                   <div className="mt-2 pl-4 border-l-2 border-blue-200">
@@ -83,17 +87,29 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
                   <div className="mt-2 pl-4 border-l-2 border-green-200">
                     <p><strong>VMŠ (Verovatno maksimalna šteta):</strong></p>
                     <p className="text-xs text-gray-600">• VMŠ = SVnpoz × Ivo</p>
-                    <p className="text-xs text-gray-600">• Ivo = Iud × Kvo</p>
-                    <p className="text-xs text-gray-600">• Kvo: 10%(VO=1), 15%(VO=2), 20%(VO=3), 25%(VO=4), 30%(VO=5)</p>
+                    <p className="text-xs text-gray-600">• Ivo = Иуд × Кво</p>
+                    <p className="text-xs text-gray-600">• Индекс утицаја делатности је децимални приказ утицаја делатности (Уд) и служи за прорачун вероватно максималне штете (Прилог Б1, кол. 4)</p>
+                    <p className="text-xs text-gray-600">• Кво – koeficijent veličine opasnosti: 10%(Svo=1), 15%(Svo=2), 20%(Svo=3), 25%(Svo=4), 30%(Svo=5)</p>
+                    <p className="text-xs text-gray-600">• Stepen Svo se preuzima iz Priloga Lj, kol. 3</p>
                     <p className="text-xs text-gray-600">• Prema Prilogu Nj, tabela Nj.1a</p>
                   </div>
                   <p className="mt-2"><strong>Finalni rezultat:</strong> <span className="bg-yellow-100 px-2 py-1 rounded">{data.steta}</span></p>
                 </div>
               </div>
 
-              {/* Kolona 7: Posledice */}
+              {/* Kolona 8: Kritičnost */}
               <div className="mb-4 p-3 bg-white rounded border">
-                <h4 className="font-semibold text-gray-800 mb-2">Kolona 7: Posledice (P)</h4>
+                <h4 className="font-semibold text-gray-800 mb-2">Kolona 8: Kritičnost (K)</h4>
+                <div className="text-sm text-gray-800">
+                  <p><strong>Vrednost:</strong> <span className="bg-purple-100 px-2 py-1 rounded font-bold">{data.kriticnost}</span></p>
+                  <p className="mt-2"><strong>Objašnjenje:</strong> Stepen kritičnosti (К) izražen je od 1 do 5, određuje se na osnovu podataka iz kontrolne liste prema kriterijumu u Prilogu Nj, tabela Nj.2</p>
+                  <p className="text-xs text-gray-600 mt-1">• Izračunava se za svaki faktor unutar grupe rizika i agregatno (prosečno) za svaku grupu rizika</p>
+                </div>
+              </div>
+
+              {/* Kolona 9: Posledice */}
+              <div className="mb-4 p-3 bg-white rounded border">
+                <h4 className="font-semibold text-gray-800 mb-2">Kolona 9: Posledice (P)</h4>
                 <div className="text-sm text-gray-800">
                   <p><strong>Formula:</strong> P = Š × K (iz matrice Nj.3)</p>
                   <p><strong>Kalkulacija:</strong> Šteta {data.steta} × Kritičnost {data.kriticnost} = {data.posledice}</p>

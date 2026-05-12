@@ -49,29 +49,48 @@ export async function POST(
             ? scores.reduce((a, b) => a + b, 0) / scores.length
             : 0;
 
-        // Upsert data
-        await pool.query(
-            `INSERT INTO prilog_u (
-                procena_id, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, final_score, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-            ON CONFLICT (procena_id) DO UPDATE SET
-                zahtev_a = EXCLUDED.zahtev_a,
-                zahtev_b = EXCLUDED.zahtev_b,
-                zahtev_v = EXCLUDED.zahtev_v,
-                zahtev_g = EXCLUDED.zahtev_g,
-                zahtev_d = EXCLUDED.zahtev_d,
-                final_score = EXCLUDED.final_score,
-                updated_at = NOW()`,
-            [
-                procenaId,
-                body.zahtev_a,
-                body.zahtev_b,
-                body.zahtev_v,
-                body.zahtev_g,
-                body.zahtev_d,
-                finalScore
-            ]
+        const existingResult = await pool.query(
+            'SELECT id FROM prilog_u WHERE procena_id = $1',
+            [procenaId]
         );
+
+        if (existingResult.rows.length > 0) {
+            await pool.query(
+                `UPDATE prilog_u
+                 SET zahtev_a = $1,
+                     zahtev_b = $2,
+                     zahtev_v = $3,
+                     zahtev_g = $4,
+                     zahtev_d = $5,
+                     final_score = $6,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE procena_id = $7`,
+                [
+                    body.zahtev_a,
+                    body.zahtev_b,
+                    body.zahtev_v,
+                    body.zahtev_g,
+                    body.zahtev_d,
+                    finalScore,
+                    procenaId
+                ]
+            );
+        } else {
+            await pool.query(
+                `INSERT INTO prilog_u (
+                    procena_id, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, final_score, updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)`,
+                [
+                    procenaId,
+                    body.zahtev_a,
+                    body.zahtev_b,
+                    body.zahtev_v,
+                    body.zahtev_g,
+                    body.zahtev_d,
+                    finalScore
+                ]
+            );
+        }
 
         return NextResponse.json({ success: true, finalScore });
 

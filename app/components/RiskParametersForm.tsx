@@ -73,7 +73,7 @@ export default function RiskParametersForm({
           {/* Stepen izloženosti */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Stepen izloženosti (Si)
+              Stepen izloženosti (Si, Prilog N - tabela N.3)
             </label>
             <select
               value={stepenIzlozenosti}
@@ -87,14 +87,14 @@ export default function RiskParametersForm({
               ))}
             </select>
             <p className="text-xs text-gray-500">
-              Koliko dugo je organizacija izložena ovom riziku?
+              Koliko dugo je organizacija izložena ovom riziku? Stepenovanje se vrši prema Prilogu N, tabela N.3.
             </p>
           </div>
 
           {/* Stepen ranjivosti */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Stepen ranjivosti (Sr)
+              Stepen ranjivosti (Sr, Prilog N - tabela N.4)
             </label>
             <select
               value={stepenRanjivosti}
@@ -108,14 +108,14 @@ export default function RiskParametersForm({
               ))}
             </select>
             <p className="text-xs text-gray-500">
-              Koliko je organizacija ranjiva na ovaj rizik?
+              Koliko je organizacija ranjiva na ovaj rizik? Stepenovanje se vrši prema Prilogu N, tabela N.4.
             </p>
           </div>
 
           {/* Kritičnost */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kritičnost (K)
+              Kritičnost (K, Prilog Nj - tabela Nj.2)
             </label>
             <select
               value={kriticnost}
@@ -129,7 +129,8 @@ export default function RiskParametersForm({
               ))}
             </select>
             <p className="text-xs text-gray-500">
-              Koliko je kritičan uticaj ovog rizika na organizaciju?
+              Stepen kritičnosti (К) izražen je od 1 do 5, određuje se na osnovu podataka iz kontrolne liste. 
+              Izračunava se za svaki faktor unutar grupe rizika i agregatno (prosečno) za svaku grupu rizika.
             </p>
           </div>
         </div>

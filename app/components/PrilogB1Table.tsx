@@ -5,10 +5,11 @@ interface PrilogB1Data {
     id?: number;
     groupId: number;
     groupName: string;
-    uticaj: number;
-    iud: number | null;
-    vk: number | null;
-    k: number | null;
+    svo: number; // Stepen veličine opasnosti (Kolona 3)
+    uticaj: number; // Uticaj delatnosti % (Kolona 4)
+    iud: number | null; // Indeks uticaja delatnosti (Kolona 5)
+    kvo: number | null; // Koeficijent veličine opasnosti (Kolona 6)
+    ivo: number | null; // Indeks veličine opasnosti (Kolona 7)
 }
 
 interface PrilogB1TableProps {
@@ -32,7 +33,7 @@ const RISK_GROUPS: { [key: number]: string } = {
 
 export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1TableProps) {
     const [data, setData] = useState<PrilogB1Data[]>([]);
-    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingCell, setEditingCell] = useState<string | null>(null);
     const [editValue, setEditValue] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
@@ -44,10 +45,11 @@ export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1T
             initialData.push({
                 groupId: id,
                 groupName: RISK_GROUPS[id],
+                svo: 0,
                 uticaj: 0,
                 iud: null,
-                vk: null,
-                k: null
+                kvo: null,
+                ivo: null
             });
         });
 
@@ -57,14 +59,14 @@ export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1T
                 if (response.ok) {
                     const savedData = await response.json();
                     // Merge saved data
-                    // Merge saved data
                     interface SavedB1Item {
                         group_id: number;
                         id: number;
+                        svo: number;
                         uticaj: string;
                         iud: string;
-                        vk: number | null;
-                        k: number | null;
+                        kvo: string | null;
+                        ivo: string | null;
                     }
 
                     savedData.forEach((item: SavedB1Item) => {
@@ -73,10 +75,11 @@ export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1T
                             initialData[index] = {
                                 ...initialData[index],
                                 id: item.id,
+                                svo: item.svo,
                                 uticaj: parseFloat(item.uticaj),
                                 iud: parseFloat(item.iud),
-                                vk: item.vk,
-                                k: item.k
+                                kvo: item.kvo ? parseFloat(item.kvo) : null,
+                                ivo: item.ivo ? parseFloat(item.ivo) : null
                             };
                         }
                     });
@@ -94,25 +97,33 @@ export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1T
         }
     }, [procenaId]);
 
-    const handleCellClick = (groupId: number, currentValue: number) => {
+    const handleCellClick = (groupId: number, field: 'svo', currentValue: number) => {
         if (readOnly) return;
-        setEditingId(groupId);
+        setEditingCell(`${groupId}-${field}`);
         setEditValue(currentValue.toString());
     };
 
-    const handleInputBlur = async (groupId: number) => {
-        const newValue = parseFloat(editValue) || 0;
+    const handleInputBlur = async (groupId: number, field: 'svo') => {
+        const newValue = parseInt(editValue) || 0;
+        
+        // Validate Svo value (must be 1-5)
+        if (field === 'svo' && (newValue < 0 || newValue > 5)) {
+            alert('Стepen veličine opasnosti (Сво) mora biti između 0 i 5');
+            setEditingCell(null);
+            setEditValue('');
+            return;
+        }
 
         // Update local state temporarily for responsiveness
         setData(prev => prev.map(item =>
-            item.groupId === groupId ? { ...item, uticaj: newValue } : item
+            item.groupId === groupId ? { ...item, [field]: newValue } : item
         ));
 
         try {
             const response = await fetch(`/api/procena/${procenaId}/prilog-b1`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ groupId, uticaj: newValue })
+                body: JSON.stringify({ groupId, svo: newValue })
             });
 
             if (response.ok) {
@@ -121,10 +132,11 @@ export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1T
                 setData(prev => prev.map(item =>
                     item.groupId === groupId ? {
                         ...item,
-                        uticaj: newValue,
+                        svo: result.svo,
+                        uticaj: result.uticaj,
                         iud: result.iud,
-                        vk: result.vk,
-                        k: result.k
+                        kvo: result.kvo,
+                        ivo: result.ivo
                     } : item
                 ));
             }
@@ -132,14 +144,14 @@ export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1T
             console.error('Error saving data:', error);
         }
 
-        setEditingId(null);
+        setEditingCell(null);
         setEditValue('');
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent, groupId: number) => {
-        if (e.key === 'Enter') handleInputBlur(groupId);
+    const handleKeyPress = (e: React.KeyboardEvent, groupId: number, field: 'svo') => {
+        if (e.key === 'Enter') handleInputBlur(groupId, field);
         if (e.key === 'Escape') {
-            setEditingId(null);
+            setEditingCell(null);
             setEditValue('');
         }
     };
@@ -161,12 +173,13 @@ export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1T
                 <table className="w-full border-collapse border-2 border-gray-800 text-sm">
                     <thead>
                         <tr className="bg-gray-100 text-gray-900">
-                            <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '50px' }}>Р. бр.</th>
-                            <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '100px' }}>Утицај (%)</th>
+                            <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '50px' }}>РБ</th>
                             <th className="border border-gray-800 px-2 py-2 text-center">Група ризика</th>
+                            <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '80px' }}>Степен величине опасности<br />(Сво)</th>
+                            <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '100px' }}>Утицај делатности<br />(%)</th>
                             <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '100px' }}>Индекс утицаја делатности<br />(Иуд)</th>
-                            <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '100px' }}>Величина критичности<br />(ВК)</th>
-                            <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '100px' }}>Степен критичности<br />(К)</th>
+                            <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '100px' }}>Коефицијент величине опасности<br />(Кво)</th>
+                            <th className="border border-gray-800 px-2 py-2 text-center" style={{ width: '100px' }}>Индекс величине опасности<br />(Иво)</th>
                         </tr>
                         <tr className="bg-gray-50 text-xs text-gray-900 font-semibold">
                             <th className="border border-gray-800 px-1 py-1 text-center">1</th>
@@ -175,44 +188,53 @@ export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1T
                             <th className="border border-gray-800 px-1 py-1 text-center">4</th>
                             <th className="border border-gray-800 px-1 py-1 text-center">5</th>
                             <th className="border border-gray-800 px-1 py-1 text-center">6</th>
+                            <th className="border border-gray-800 px-1 py-1 text-center">7</th>
                         </tr>
                     </thead>
                     <tbody>
                         {data.map((item) => (
                             <tr key={item.groupId} className="hover:bg-gray-50">
                                 <td className="border border-gray-800 px-2 py-2 text-center font-medium bg-yellow-50 text-gray-900">{item.groupId}</td>
-                                <td className="border border-gray-800 px-2 py-2 text-center bg-yellow-50 text-gray-900">
-                                    {editingId === item.groupId ? (
+                                <td className="border border-gray-800 px-2 py-2 font-medium text-gray-900">{item.groupName}</td>
+                                <td className="border border-gray-800 px-2 py-2 text-center bg-blue-50 text-gray-900">
+                                    {editingCell === `${item.groupId}-svo` ? (
                                         <input
                                             type="number"
+                                            min="0"
+                                            max="5"
                                             className="w-full p-1 border rounded text-center"
                                             value={editValue}
                                             onChange={(e) => setEditValue(e.target.value)}
-                                            onBlur={() => handleInputBlur(item.groupId)}
-                                            onKeyDown={(e) => handleKeyPress(e, item.groupId)}
+                                            onBlur={() => handleInputBlur(item.groupId, 'svo')}
+                                            onKeyDown={(e) => handleKeyPress(e, item.groupId, 'svo')}
                                             autoFocus
                                         />
                                     ) : (
                                         <div
-                                            className={`${!readOnly ? 'cursor-pointer hover:bg-yellow-100' : ''} p-1 rounded text-gray-900`}
-                                            onClick={() => handleCellClick(item.groupId, item.uticaj)}
+                                            className={`${!readOnly ? 'cursor-pointer hover:bg-blue-100' : ''} p-1 rounded text-gray-900 font-medium`}
+                                            onClick={() => handleCellClick(item.groupId, 'svo', item.svo)}
                                         >
-                                            {item.uticaj.toFixed(2)}%
+                                            {item.svo}
                                         </div>
                                     )}
                                 </td>
-                                <td className="border border-gray-800 px-2 py-2 font-medium text-gray-900">{item.groupName}</td>
+                                <td className="border border-gray-800 px-2 py-2 text-center text-gray-900 font-medium">
+                                    {item.uticaj.toFixed(2)}%
+                                </td>
                                 <td className="border border-gray-800 px-2 py-2 text-center text-gray-900 font-medium">{item.iud !== null ? item.iud.toFixed(4) : '-'}</td>
-                                <td className="border border-gray-800 px-2 py-2 text-center text-gray-900 font-medium">{item.vk !== null ? item.vk : '-'}</td>
-                                <td className="border border-gray-800 px-2 py-2 text-center text-gray-900 font-medium">{item.k !== null ? item.k : '-'}</td>
+                                <td className="border border-gray-800 px-2 py-2 text-center text-gray-900 font-medium">{item.kvo !== null ? item.kvo.toFixed(2) : '-'}</td>
+                                <td className="border border-gray-800 px-2 py-2 text-center text-gray-900 font-medium">{item.ivo !== null ? item.ivo.toFixed(4) : '-'}</td>
                             </tr>
                         ))}
                         <tr className="bg-green-100 font-bold">
                             <td className="border border-gray-800 px-2 py-2 text-center"></td>
+                            <td className="border border-gray-800 px-2 py-2 text-center text-gray-900">АГРЕГАТНО</td>
+                            <td className="border border-gray-800 px-2 py-2 text-center bg-gray-200">
+                                {data.reduce((sum, item) => sum + item.svo, 0)}
+                            </td>
                             <td className={`border border-gray-800 px-2 py-2 text-center ${Math.abs(totalUticaj - 100) > 0.01 ? 'text-red-600' : 'text-green-800'}`}>
                                 {totalUticaj.toFixed(2)}%
                             </td>
-                            <td className="border border-gray-800 px-2 py-2 text-center text-gray-900">АГРЕГАТНО</td>
                             <td className="border border-gray-800 px-2 py-2 text-center bg-gray-200"></td>
                             <td className="border border-gray-800 px-2 py-2 text-center bg-gray-200"></td>
                             <td className="border border-gray-800 px-2 py-2 text-center bg-gray-200"></td>
@@ -226,6 +248,37 @@ export default function PrilogB1Table({ procenaId, readOnly = false }: PrilogB1T
                     <strong>УПОЗОРЕЊЕ:</strong> Збир могућег утицаја мора бити тачно 100%. Тренутни збир је {totalUticaj.toFixed(2)}%.
                 </div>
             )}
+
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-300 rounded text-sm text-gray-800">
+                <p className="font-semibold mb-2">Упутство за коришћење:</p>
+                <p className="mb-1">
+                    <strong>Кол. 3</strong> – Сво – степен величине опасности за посматрану организацију (са свим ограницима) по групама ризика, 
+                    и уноси се према Прилогу Љ, Кол. 3
+                </p>
+                <p className="mb-1">
+                    <strong>Кол. 4</strong> – Утицај делатности (Уд) по групама ризика према формули: 
+                    Уд = Сво/ΣСво у %, тако да укупан збир буде 100%
+                </p>
+                <p className="mb-1">
+                    <strong>Кол. 5</strong> – Индекс утицаја делатности (Иуд) децимални је приказ утицаја делатности (Уд) према Кол. 4, 
+                    и служи за прорачун вероватно максималне штете
+                </p>
+                <p className="mb-1">
+                    <strong>Кол. 6</strong> – Коефицијент величине опасности (Кво) одређује се према следећим односима: 
+                    0,1 ако је Сво = 1; 0,15 ако је Сво = 2; 0,2 ако је Сво = 3; 0,25 ако је Сво = 4 и 0,3 ако је Сво = 5, 
+                    и служи за прорачун индекса величине опасности (Иво) у Кол. 7
+                </p>
+                <p>
+                    <strong>Кол. 7</strong> – Индекс величине опасности (Иво) представља однос индекса утицаја делатности (Иуд) и 
+                    коефицијента величине опасности (Кво), одређује се према формули: Иво = Иуд×Кво, приказује се у 
+                    децималној вредности и служи за прорачун вероватно максималне штете (ВМШШ)
+                </p>
+            </div>
+
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded text-sm text-gray-800">
+                <p className="font-semibold mb-2">НАПОМЕНА:</p>
+                <p>Наведени подаци морају да буду уписани у Дигитални регистар процена ризика.</p>
+            </div>
         </div>
     );
 }

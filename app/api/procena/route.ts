@@ -49,10 +49,9 @@ export async function POST(request: NextRequest) {
 
         // Proveri da li već postoji aktivna procena za ovo pravno lice
         const existingAssessment = await pool.query(`
-            SELECT id, status FROM ProcenaRizika 
+            SELECT TOP 1 id, status FROM ProcenaRizika
             WHERE pravnoLiceId = $1 AND status = 'u_toku'
             ORDER BY createdAt DESC
-            LIMIT 1
         `, [pravnoLiceId]);
 
         if (existingAssessment.rows.length > 0) {
@@ -81,7 +80,7 @@ export async function POST(request: NextRequest) {
             `, [`Procena rizika - ${pravnoLiceNaziv}`, pravnoLiceId]);
 
         // Get the inserted record
-        const idResult = await pool.query('SELECT SCOPE_IDENTITY() as id');
+        const idResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
         const procenaId = idResult.rows[0].id;
         
         const procenaResult = await pool.query(`

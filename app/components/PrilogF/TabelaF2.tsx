@@ -55,7 +55,7 @@ export default function TabelaF2({ data, onChange, readOnly }: TabelaF2Props) {
                     </tr>
                     <tr>
                         <td className="border border-gray-800 p-2 align-top font-semibold text-gray-900">
-                            4. Подаци о лицима из посматране организације која учествују у тиму (име, презиме, стручна спрема)
+                            4. Подаци о лицима из посматране организације која учествују у тиму (име, презиме, стручна спрема и радно место)
                         </td>
                         <td className="border border-gray-800 p-0">
                             <textarea

@@ -29,12 +29,15 @@ export async function POST() {
         
         // Create GrupaRizika table if it doesn't exist
         await pool.query(`
-            CREATE TABLE IF NOT EXISTS GrupaRizika (
-                id SERIAL PRIMARY KEY,
-                naziv VARCHAR(255) NOT NULL,
-                redosled INTEGER NOT NULL,
-                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+            IF OBJECT_ID('GrupaRizika', 'U') IS NULL
+            BEGIN
+                CREATE TABLE GrupaRizika (
+                    id INT IDENTITY(1,1) PRIMARY KEY,
+                    naziv NVARCHAR(255) NOT NULL,
+                    redosled INT NOT NULL,
+                    createdAt DATETIME2 DEFAULT CURRENT_TIMESTAMP
+                )
+            END
         `);
         
         // First delete existing groups

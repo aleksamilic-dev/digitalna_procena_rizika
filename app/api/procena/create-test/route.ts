@@ -12,28 +12,28 @@ export async function POST() {
         if (existingPravnoLice.rows.length > 0) {
             pravnoLiceId = existingPravnoLice.rows[0].id;
         } else {
-            const pravnoLiceResult = await pool.query(`
+            await pool.query(`
                 INSERT INTO PravnoLice (naziv, pib, adresa, telefon, email)
                 VALUES ($1, $2, $3, $4, $5)
-                RETURNING id
             `, ['Test Kompanija d.o.o.', '123456789', 'Test adresa 123, Beograd', '+381 11 123 4567', 'test@test.com']);
+            const pravnoLiceResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
             pravnoLiceId = pravnoLiceResult.rows[0].id;
         }
         
         // Get the admin user ID
-        const adminUser = await pool.query('SELECT id FROM korisnici WHERE je_admin = TRUE LIMIT 1');
+        const adminUser = await pool.query('SELECT TOP 1 id FROM korisnici WHERE je_admin = 1 ORDER BY id');
             
         if (adminUser.rows.length === 0) {
             throw new Error('No admin user found. Please ensure the database is properly initialized.');
         }
         
         // Create a test risk assessment
-        const procenaResult = await pool.query(`
-                INSERT INTO ProcenaRizika (naziv, opis, status, pravnoLiceId, korisnikId)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING id
-            `, ['Test Procena Rizika', 'Ovo je test procena rizika kreirana automatski za testiranje sistema', 'u_toku', pravnoLiceId, adminUser.rows[0].id]);
-        
+        await pool.query(`
+            INSERT INTO ProcenaRizika (naziv, opis, status, pravnoLiceId, korisnikId)
+            VALUES ($1, $2, $3, $4, $5)
+        `, ['Test Procena Rizika', 'Ovo je test procena rizika kreirana automatski za testiranje sistema', 'u_toku', pravnoLiceId, adminUser.rows[0].id]);
+
+        const procenaResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
         const procenaId = procenaResult.rows[0].id;
         
         return NextResponse.json({

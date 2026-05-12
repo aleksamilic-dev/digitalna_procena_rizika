@@ -6,12 +6,12 @@ export async function POST() {
         const pool = await getDbConnection();
         
         // Simple insert without foreign key constraints
-        const result = await pool.query(`
-                INSERT INTO ProcenaRizika (naziv, opis, status, createdAt, updatedAt)
-                VALUES ('Test Procena Rizika', 'Test opis', 'u_toku', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                RETURNING id
-            `);
-        
+        await pool.query(`
+            INSERT INTO ProcenaRizika (naziv, opis, status, createdAt, updatedAt)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `, ['Test Procena Rizika', 'Test opis', 'u_toku']);
+
+        const result = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
         const procenaId = result.rows[0].id;
         
         return NextResponse.json({

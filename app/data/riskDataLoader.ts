@@ -17,8 +17,8 @@ export interface PrilogMData {
   groupId: string; // "group1", "group2", itd.
   requirement: string;
   velicinaOpasnosti: number | null; // Kolona 3 - iz korisničkog unosa
-  izlozenost: number | null; // Kolona 4 - (Si + VO)/2
-  ranjivost: number | null; // Kolona 5 - (Sr + VO)/2
+  izlozenost: number | null; // Kolona 4 - (Si + Svo)/2
+  ranjivost: number | null; // Kolona 5 - (Sr + Svo)/2
   verovatnoca: number | null; // Kolona 6 - I × R (iz matrice N.5)
   steta: number | null; // Kolona 7 - (SŠ + VMŠ)/2
   kriticnost: number | null; // Kolona 8 - prema kriterijumu
@@ -34,7 +34,8 @@ export interface PrilogMData {
 export const MATRICE = {
   // Matrica za verovatnoću (Prilog N, tabela N.5)
   // IZLOŽENOST (redovi) vs RANJIVOST (kolone)
-  // NAPOMENA: Prema upustvu В = И (kol. 4) # Р (kol. 5)
+  // NAPOMENA 1: Prema upustvu В = И (kol. 4) # Р (kol. 5)
+  // NAPOMENA 2: Dobijene vrednosti se zaokružuju na cele brojeve
   verovatnoca: [
     [3, 2, 1, 1, 1], // Izloženost 1 (zanemarljiva) vs Ranjivost 1-5 (vrlo velika-vrlo mala)
     [4, 3, 2, 2, 1], // Izloženost 2 (povremena)
@@ -64,7 +65,9 @@ export const MATRICE = {
   ]
 };
 
-// Prilog B1 - Indeks uticaja delatnosti (Iud) - prema standardu
+// Prilog B1 - Indeks uticaja delatnosti (Иуд) - prema standardu
+// Иуд – Indeks uticaja delatnosti je decimalni prikaz uticaja delatnosti (Уд) 
+// i služi za proračun verovatno maksimalne štete (Prilog B1, tabela B1, kol. 4)
 export const UTICAJ_DELATNOSTI: { [key: string]: number } = {
   // Proizvodnja
   'proizvodnja_hrane': 0.15,
@@ -121,6 +124,9 @@ export const KRITERIJUMI_STETE = {
 };
 
 // Kriterijumi za kritičnost (Prilog Nj, tabela Nj.2)
+// Stepen kritičnosti (К) izražen je od 1 do 5, određuje se na osnovu podataka 
+// iz kontrolne liste prema kriterijumu u Prilogu Nj, tabela Nj.2;
+// Izračunava se za svaki faktor unutar grupe rizika i agregatno (prosečno) za svaku grupu rizika.
 export const KRITERIJUMI_KRITICNOSTI = [
   { stepen: 1, naziv: 'Vrlo velika', opis: 'Potpuni prekid funkcionisanja organizacije' },
   { stepen: 2, naziv: 'Velika', opis: 'Ozbiljno narušavanje funkcionisanja organizacije' },
@@ -178,10 +184,14 @@ export function calculateVerovatnoMaksimalnaSteta(
   velicinaOpasnosti: number,
   delatnost: string = 'default'
 ): { vmsh: number, stepenVMSH: number } {
-  // Iud - indeks uticaja delatnosti
+  // Иуд – Indeks uticaja delatnosti je decimalni prikaz uticaja delatnosti (Уд)
+  // i služi za proračun verovatno maksimalne štete (Prilog B1, tabela B1, kol. 4)
   const iud = UTICAJ_DELATNOSTI[delatnost] || UTICAJ_DELATNOSTI.default;
 
-  // Kvo - koeficijent na osnovu VO (10%, 15%, 20%, 25%, 30%)
+  // Кво – koeficijent veličine opasnosti izražen u procentima:
+  // 10% ako je Svo = 1, 15% ako je Svo = 2, 20% ako je Svo = 3, 
+  // 25% ako je Svo = 4 i 30% ako je Svo = 5
+  // Stepen Svo se preuzima iz Priloga Lj, kol. 3, za svaku od grupa rizika
   const kvoMapping = { 1: 0.10, 2: 0.15, 3: 0.20, 4: 0.25, 5: 0.30 };
   const kvo = kvoMapping[velicinaOpasnosti as keyof typeof kvoMapping] || 0.20;
 
@@ -234,20 +244,25 @@ export function calculatePrilogM(
     });
   }
 
-  // KOLONA 4: Izloženost = (Si + VO)/2 - Prilog M, upustvo kolona 4
-  const izlozenost = Math.round((stepenIzlozenosti + velicinaOpasnosti) / 2);
+  // Svo - stepen veličine opasnosti (Prilog Lj, kolona 3)
+  const svo = velicinaOpasnosti;
+
+  // KOLONA 4: Izloženost = (Si + Svo)/2 - stepenovanje prema Prilogu N, tabela N.3
+  const izlozenost = Math.round((stepenIzlozenosti + svo) / 2);
   if (enableLogging) {
-    console.log(`📐 KOLONA 4 - Izloženost: (${stepenIzlozenosti} + ${velicinaOpasnosti})/2 = ${izlozenost}`);
+    console.log(`📐 KOLONA 4 - Izloženost: (Si ${stepenIzlozenosti} + Svo ${svo})/2 = ${izlozenost}`);
   }
 
-  // KOLONA 5: Ranjivost = (Sr + VO)/2 - Prilog M, upustvo kolona 5
-  const ranjivost = Math.round((stepenRanjivosti + velicinaOpasnosti) / 2);
+  // KOLONA 5: Ranjivost = (Sr + Svo)/2 - Prilog M, upustvo kolona 5
+  // Stepenovanje ranjivosti (Sr) se vrši prema Prilogu N, tabela N.4
+  const ranjivost = Math.round((stepenRanjivosti + svo) / 2);
   if (enableLogging) {
-    console.log(`🛡️ KOLONA 5 - Ranjivost: (${stepenRanjivosti} + ${velicinaOpasnosti})/2 = ${ranjivost}`);
+    console.log(`🛡️ KOLONA 5 - Ranjivost: (Sr ${stepenRanjivosti} + Svo ${svo})/2 = ${ranjivost}`);
   }
 
   // KOLONA 6: Verovatnoća = И × Р (iz matrice N.5) - Prilog N, tabela N.5
-  // NAPOMENA: Prema upustvu В = И (kol. 4) # Р (kol. 5) - Izloženost × Ranjivost
+  // NAPOMENA 1: Prema upustvu В = И (kol. 4) # Р (kol. 5) - Izloženost × Ranjivost
+  // NAPOMENA 2: Dobijene vrednosti se zaokružuju na cele brojeve
   const izlozenostIndex = Math.min(Math.max(izlozenost - 1, 0), 4);
   const ranjivostIndex = Math.min(Math.max(ranjivost - 1, 0), 4);
   const verovatnoca = MATRICE.verovatnoca[izlozenostIndex][ranjivostIndex];
@@ -268,6 +283,8 @@ export function calculatePrilogM(
   }
 
   // KOLONA 8: Kritičnost - unosi se direktno prema kriterijumu iz Priloga Nj, tabela Nj.2
+  // Stepen kritičnosti (К) izražen je od 1 do 5, određuje se na osnovu podataka iz kontrolne liste
+  // Izračunava se za svaki faktor unutar grupe rizika i agregatno (prosečno) za svaku grupu rizika
   if (enableLogging) {
     console.log(`🔥 KOLONA 8 - Kritičnost: ${kriticnost} (uneto)`);
   }

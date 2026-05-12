@@ -45,7 +45,7 @@ export async function POST(
             if (body.id) {
                 await pool.query(
                     `UPDATE tabela_f5 
-                     SET mera = $1, opis_i_obrazlozenje = $2, updated_at = NOW() 
+                     SET mera = $1, opis_i_obrazlozenje = $2, updated_at = CURRENT_TIMESTAMP
                      WHERE id = $3 AND procena_id = $4`,
                     [body.mera, body.opis_i_obrazlozenje, body.id, procenaId]
                 );
@@ -56,7 +56,7 @@ export async function POST(
                      VALUES ($1, $2, $3, $4)`,
                     [procenaId, body.group_id, body.mera || '', body.opis_i_obrazlozenje || '']
                 );
-                const idResult = await pool.query('SELECT SCOPE_IDENTITY() as id');
+                const idResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
                 return NextResponse.json({ success: true, id: idResult.rows[0].id });
             }
         }

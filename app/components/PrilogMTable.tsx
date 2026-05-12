@@ -137,7 +137,7 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
             '11.2': 'Постојање урађене процене ризика ИКТ система и идентификованих свих законом предвиђених мера заштите ИКТ система',
             '11.3': 'Постојање процедура на који начин организација врши обавештавање о инцидентима и да ли је одређено лице за управљање инцидентима',
             '11.4': 'Постојање одређеног лица за послове информационе безбедности и/или ангажовање спољних експерата и да ли је организација урадила ревизију докумената сходно законској регулативи',
-            '11.5': 'Постојање овлашћења запослених за коришћење корпоративних ИКТ ресурса у приватне сврхе (приступ приватним налозима електронске поште, друштвеним мрежама итд.) и приватних преносних медијума у корпоративним просторијама'
+            '11.5': 'Постојање интерних процедура рада и мера безбедности у ИКТ систему које регулишу забрану коришћења приватних налога е-поште, инсталирање приватних апликација и забрану приступа друштвеним мрежама'
         };
         return subsectionTitles[subsectionId] || null;
     };
@@ -247,7 +247,7 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
                                 onClick={() => setShowImageModal('vo')}
                                 title="Кликните да видите скалу вредности"
                             >
-                                ВО
+                                Сво
                             </th>
                             <th
                                 className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800 cursor-pointer hover:bg-gray-300 transition-colors"
@@ -276,18 +276,10 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
                             <th
                                 className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800 cursor-pointer hover:bg-gray-300 transition-colors"
                                 style={{ width: '50px' }}
-                                onClick={() => setShowImageModal('posl')}
-                                title="Кликните да видите скалу вредности"
-                            >
-                                Посл.
-                            </th>
-                            <th
-                                className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800 cursor-pointer hover:bg-gray-300 transition-colors"
-                                style={{ width: '50px' }}
                                 onClick={() => setShowImageModal('stet')}
                                 title="Кликните да видите скалу вредности"
                             >
-                                Штет.
+                                Штете
                             </th>
                             <th
                                 className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800 cursor-pointer hover:bg-gray-300 transition-colors"
@@ -295,7 +287,15 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
                                 onClick={() => setShowImageModal('krit')}
                                 title="Кликните да видите скалу вредности"
                             >
-                                Крит.
+                                Критичност
+                            </th>
+                            <th
+                                className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800 cursor-pointer hover:bg-gray-300 transition-colors"
+                                style={{ width: '50px' }}
+                                onClick={() => setShowImageModal('posl')}
+                                title="Кликните да видите скалу вредности"
+                            >
+                                Последице
                             </th>
                             <th
                                 className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800 cursor-pointer hover:bg-gray-300 transition-colors"
@@ -736,6 +736,12 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
                                 style={{ objectFit: 'contain' }}
                             />
                         </div>
+                        {showImageModal === 'ver' && (
+                            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-700">
+                                <p className="mb-2"><strong>НАПОМЕНА 1:</strong> Према упутству В = И (кол. 4) # Р (кол. 5)</p>
+                                <p><strong>НАПОМЕНА 2:</strong> Добијене вредности се заокружују на целе бројеве.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

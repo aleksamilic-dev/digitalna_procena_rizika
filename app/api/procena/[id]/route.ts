@@ -99,6 +99,14 @@ export async function PUT(
             );
         }
 
+        const validStatuses = ['u_toku', 'zavrsena', 'na_cekanju', 'otkazana'];
+        if (!validStatuses.includes(status)) {
+            return NextResponse.json(
+                { error: 'Nevaljan status' },
+                { status: 400 }
+            );
+        }
+
         const pool = await getDbConnection();
 
         const result = await pool.query(`
