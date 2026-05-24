@@ -2,10 +2,17 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RISK_GROUPS } from '../data/riskGroups';
-import { getRiskGroupData } from '../data/riskDataLoader';
-import { PrilogMData } from '../data/riskDataLoader';
+import { getRiskGroupData, type PrilogMData } from '../data/riskDataLoader';
 import RiskAssessmentTable from './RiskAssessmentTable';
 import FinancialDataForm from './FinancialDataForm';
+
+const DEBUG_RISK_ASSESSMENT = process.env.NODE_ENV === 'development';
+
+function debugLog(...args: Parameters<typeof console.log>) {
+    if (DEBUG_RISK_ASSESSMENT) {
+        console.log(...args);
+    }
+}
 
 interface RiskSelection {
     risk_id: string;
@@ -106,8 +113,8 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                 const response = await fetch(`/api/procena/${procenaId}/prilog-m`);
                 if (response.ok) {
                     const allData = await response.json();
-                    console.log('🔍 Učitani podaci iz API-ja:', allData.length, 'stavki');
-                    console.log('🔍 Prvi podatak:', allData[0]);
+                    debugLog('🔍 Učitani podaci iz API-ja:', allData.length, 'stavki');
+                    debugLog('🔍 Prvi podatak:', allData[0]);
 
                     // Grupiši podatke po grupama
                     const newPrilogMData = new Map<string, PrilogMData[]>();
@@ -165,11 +172,9 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
 
                         // Debug: prikaži mapiranje groupId
                         const originalGroupId = dbItem.groupid || dbItem.groupId || '';
-                        if (originalGroupId !== groupId) {
-                            console.log(`🔍 Mapiranje groupId: "${originalGroupId}" → "${groupId}"`);
+                        if (DEBUG_RISK_ASSESSMENT && originalGroupId !== groupId) {
+                            debugLog(`🔍 Mapiranje groupId: "${originalGroupId}" → "${groupId}"`);
                         }
-
-
 
                         if (mappedItem.groupId && newPrilogMData.has(mappedItem.groupId)) {
                             const groupData = newPrilogMData.get(mappedItem.groupId) || [];
@@ -178,11 +183,11 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                             if (existingIndex >= 0) {
                                 // Zameni postojeću stavku
                                 groupData[existingIndex] = mappedItem;
-                                console.log(`🔄 Zamenio stavku ${mappedItem.id} u grupi ${mappedItem.groupId}`);
+                                debugLog(`🔄 Zamenio stavku ${mappedItem.id} u grupi ${mappedItem.groupId}`);
                             } else {
                                 // Dodaj novu stavku
                                 groupData.push(mappedItem);
-                                console.log(`➕ Dodao stavku ${mappedItem.id} u grupu ${mappedItem.groupId}`);
+                                debugLog(`➕ Dodao stavku ${mappedItem.id} u grupu ${mappedItem.groupId}`);
                             }
                             newPrilogMData.set(mappedItem.groupId, groupData);
                         } else {
@@ -191,10 +196,10 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                     });
 
                     // Debug: prikaži koliko stavki ima svaka grupa
-                    console.log('🔍 Finalni podaci po grupama:');
+                    debugLog('🔍 Finalni podaci po grupama:');
                     newPrilogMData.forEach((data, groupId) => {
                         if (data.length > 0) {
-                            console.log(`  ${groupId}: ${data.length} stavki - ${data.map(item => item.id).join(', ')}`);
+                            debugLog(`  ${groupId}: ${data.length} stavki - ${data.map(item => item.id).join(', ')}`);
                         }
                     });
 
@@ -525,8 +530,8 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                             if (completedItems > totalItems && completedItems > 0) {
                                 console.warn(`⚠️ Grupa ${group.id}: completedItems (${completedItems}) > totalItems (${totalItems})`);
                                 const groupItems = allPrilogMData.get(group.id) || [];
-                                console.log('🔍 Stavke u grupi:', groupItems.map(item => ({ id: item.id, groupId: item.groupId })));
-                                console.log('🔍 Ukupno stavki u grupi iz definicije:', totalItems);
+                                debugLog('🔍 Stavke u grupi:', groupItems.map(item => ({ id: item.id, groupId: item.groupId })));
+                                debugLog('🔍 Ukupno stavki u grupi iz definicije:', totalItems);
                             }
 
                             const isCompleted = completedItems > 0;
@@ -636,7 +641,7 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                                                 });
 
                                                 if (response.ok) {
-                                                    console.log('✅ Status procene ažuriran na "zavrsena"');
+                                                    debugLog('✅ Status procene ažuriran na "zavrsena"');
                                                     window.location.href = '/';
                                                 } else {
                                                     console.error('❌ Greška pri ažuriranju statusa procene');
@@ -665,7 +670,7 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                     <FinancialDataForm
                         procenaId={procenaId}
                         onSave={(data) => {
-                            console.log('Finansijski podaci sačuvani:', data);
+                            debugLog('Finansijski podaci sačuvani:', data);
                             // Možda treba da se osvežе podaci
                         }}
                         onClose={() => setShowFinancialForm(false)}

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getDbConnection } from '../../../lib/db';
+import { getDatabaseHealth } from '../../../lib/db-health';
+
+const CORE_TABLES = ['korisnici', 'ProcenaRizika', 'RiskSelection', 'PrilogM', 'PravnoLice'];
 
 export async function GET() {
     // Disable in production for security
@@ -11,27 +13,14 @@ export async function GET() {
     }
 
     try {
-        const pool = await getDbConnection();
-        
-        // Test basic connection
-        const result = await pool.query<{currentTime: Date; version: string}>('SELECT GETDATE() as currentTime, @@VERSION as version');
-        
-        // Check if our tables exist
-        const tablesCheck = await pool.query<{table_name: string}>(`
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_type = 'BASE TABLE' 
-            AND table_schema = 'dbo'
-            AND table_name IN ('korisnici', 'ProcenaRizika', 'RiskSelection', 'PrilogM', 'PravnoLice')
-            ORDER BY table_name
-        `);
+        const health = await getDatabaseHealth({ tableNames: CORE_TABLES });
         
         return NextResponse.json({
             success: true,
             message: 'Azure SQL Database connection successful',
-            serverTime: result.rows[0].currentTime,
-            sqlVersion: result.rows[0].version.split('\n')[0],
-            existingTables: tablesCheck.rows.map(row => row.table_name),
+            serverTime: health.serverTime,
+            sqlVersion: health.sqlVersion,
+            existingTables: health.existingTables,
             connectionInfo: 'Azure SQL Database'
         });
         

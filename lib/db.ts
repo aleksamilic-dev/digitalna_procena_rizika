@@ -1,6 +1,7 @@
 import sql from 'mssql';
 
 let pool: sql.ConnectionPool | null = null;
+let poolPromise: Promise<sql.ConnectionPool> | null = null;
 
 // Azure SQL connection configuration
 const config: sql.config = {
@@ -25,26 +26,37 @@ const config: sql.config = {
 };
 
 async function connectToAzureSQL() {
-  if (!pool) {
+  if (pool) {
+    return pool;
+  }
+
+  if (poolPromise) {
+    return poolPromise;
+  }
+
+  if (!poolPromise) {
     if (!config.server || !config.database || !config.user || !config.password) {
       throw new Error('Azure SQL connection parameters are not set. Check environment variables.');
     }
 
     try {
-      pool = await sql.connect(config);
+      poolPromise = sql.connect(config);
+      pool = await poolPromise;
       console.log('✅ Connected to Azure SQL Database');
       
       pool.on('error', (err: Error) => {
         console.error('Database pool error:', err);
         pool = null; // Reset pool on error
+        poolPromise = null;
       });
     } catch (error) {
+      poolPromise = null;
       console.error('❌ Failed to connect to Azure SQL:', error);
       throw error;
     }
   }
 
-  return pool;
+  return pool as sql.ConnectionPool;
 }
 
 // Helper function to execute queries with automatic parameter conversion
@@ -226,6 +238,7 @@ export async function closeConnection() {
   if (pool) {
     await pool.close();
     pool = null;
+    poolPromise = null;
     console.log('Database connection closed');
   }
 }

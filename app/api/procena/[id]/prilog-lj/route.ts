@@ -1,29 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbConnection } from '../../../../../lib/db';
+import { executeWithRetry } from '../../../../../lib/db-retry';
 import { ProcenaRouteContext } from '../../../types';
-
-async function executeWithRetry<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> {
-  let lastError: Error = new Error('Unknown error');
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error: unknown) {
-      lastError = error as Error;
-      const err = error as { code?: string; message: string };
-      console.log(`Attempt ${attempt} failed:`, err.message);
-
-      if (attempt < maxRetries && (err.code === 'ECONNCLOSED' || err.code === 'ENOTOPEN')) {
-        console.log(`Retrying in ${attempt * 1000}ms...`);
-        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
-        continue;
-      }
-      break;
-    }
-  }
-
-  throw lastError;
-}
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 200 });
