@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getDbConnection } from '@/lib/db';
 import { ProcenaRouteContext } from '../../../types';
 
@@ -45,7 +45,7 @@ export async function POST(
             if (body.id) {
                 await pool.query(
                     `UPDATE tabela_f5 
-                     SET mera = $1, opis_i_obrazlozenje = $2, updated_at = CURRENT_TIMESTAMP
+                     SET mera = $1, opis_i_obrazlozenje = $2, updated_at = GETDATE()
                      WHERE id = $3 AND procena_id = $4`,
                     [body.mera, body.opis_i_obrazlozenje, body.id, procenaId]
                 );

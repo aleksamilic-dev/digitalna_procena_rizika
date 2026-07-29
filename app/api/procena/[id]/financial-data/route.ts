@@ -31,7 +31,7 @@ export async function POST(
             vrednostImovine = $2,
             delatnost = $3,
             stvarnaSteta = $4,
-            updatedAt = CURRENT_TIMESTAMP
+            updatedAt = GETDATE()
         WHERE procenaId = $5
       `, [
         financialData.poslovniPrihodi,
@@ -51,7 +51,7 @@ export async function POST(
           createdAt,
           updatedAt
         )
-        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, $4, $5, GETDATE(), GETDATE())
       `, [
         procenaId,
         financialData.poslovniPrihodi,

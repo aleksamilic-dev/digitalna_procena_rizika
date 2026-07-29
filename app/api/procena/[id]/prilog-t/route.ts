@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { ProcenaRouteContext } from '../../../types';
 
 export async function GET(
@@ -68,7 +68,7 @@ export async function POST(
                 UPDATE prilog_t 
                 SET kapital_score = $1, menadzeri_score = $2, osiguranje_score = $3, 
                     registar_score = $4, zarada_score = $5, prosek_resursa = $6, 
-                    updated_at = CURRENT_TIMESTAMP
+                    updated_at = GETDATE()
                 WHERE procena_id = $7
             `, [kapital_score, menadzeri_score, osiguranje_score, registar_score, zarada_score, prosek_resursa, procenaId]);
         } else {
@@ -78,7 +78,7 @@ export async function POST(
                     procena_id, kapital_score, menadzeri_score, osiguranje_score, 
                     registar_score, zarada_score, prosek_resursa, created_at, updated_at
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, GETDATE(), GETDATE())
             `, [procenaId, kapital_score, menadzeri_score, osiguranje_score, registar_score, zarada_score, prosek_resursa]);
         }
 

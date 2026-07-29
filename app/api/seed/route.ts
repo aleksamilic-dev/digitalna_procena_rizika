@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getDbConnection } from "../../../lib/db";
 
 const GRUPE = [
@@ -35,7 +35,7 @@ export async function POST() {
                     id INT IDENTITY(1,1) PRIMARY KEY,
                     naziv NVARCHAR(255) NOT NULL,
                     redosled INT NOT NULL,
-                    createdAt DATETIME2 DEFAULT CURRENT_TIMESTAMP
+                    createdAt DATETIME2 DEFAULT GETDATE()
                 )
             END
         `);

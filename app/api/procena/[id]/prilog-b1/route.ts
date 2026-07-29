@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getDbConnection } from '../../../../../lib/db';
 import { ProcenaRouteContext } from '../../../types';
 
@@ -82,14 +82,14 @@ export async function POST(
             // Ažuriraj postojeći zapis
             await pool.query(`
                 UPDATE prilog_b1 
-                SET svo = $1, uticaj = $2, iud = $3, kvo = $4, ivo = $5, updated_at = CURRENT_TIMESTAMP
+                SET svo = $1, uticaj = $2, iud = $3, kvo = $4, ivo = $5, updated_at = GETDATE()
                 WHERE procena_id = $6 AND group_id = $7
             `, [svo, uticaj, iud, kvo, ivo, procenaId, groupId]);
         } else {
             // Kreiraj novi zapis
             await pool.query(`
                 INSERT INTO prilog_b1 (procena_id, group_id, svo, uticaj, iud, kvo, ivo, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, GETDATE(), GETDATE())
             `, [procenaId, groupId, svo, uticaj, iud, kvo, ivo]);
         }
 
@@ -103,7 +103,7 @@ export async function POST(
 
                 await pool.query(`
                     UPDATE prilog_b1 
-                    SET uticaj = $1, iud = $2, kvo = $3, ivo = $4, updated_at = CURRENT_TIMESTAMP
+                    SET uticaj = $1, iud = $2, kvo = $3, ivo = $4, updated_at = GETDATE()
                     WHERE procena_id = $5 AND group_id = $6
                 `, [otherUticaj, otherIud, otherKvo, otherIvo, procenaId, otherGroupId]);
             }

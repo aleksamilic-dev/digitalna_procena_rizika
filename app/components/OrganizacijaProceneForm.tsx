@@ -105,9 +105,19 @@ export default function OrganizacijaProceneForm({ pravnoLiceId, onSave }: Organi
             <div className="bg-white shadow rounded-lg p-6">
                 <h2 className="text-xl font-bold mb-4 text-gray-900">1.3. ПОДАЦИ О ОРГАНИЗАЦИЈИ КОЈА ВРШИ ПРОЦЕНУ РИЗИКА</h2>
 
+                {/* Napomena o razlici */}
+                <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-2">
+                    <span className="text-amber-600 text-lg mt-0.5">&#9432;</span>
+                    <div className="text-sm text-amber-800">
+                        <strong>Napomena:</strong> Ovaj odeljak sadrži podatke o <strong>ovlašćenoj organizaciji koja vrši procenu rizika</strong> (npr. Securitas, konsultantska kuća i sl.), 
+                        a <strong>ne</strong> o pravnom licu nad kojim se procena vrši. 
+                        Podaci o klijentu (PIB, matični broj i adresa klijenta) nalaze se u <strong>odeljku 1.1.</strong> iznad.
+                    </div>
+                </div>
+
                 {/* a) Podaci o organizaciji */}
                 <div className="mb-6">
-                    <h3 className="font-semibold mb-3 bg-blue-100 p-2 text-gray-900">а) Подаци о организацији</h3>
+                    <h3 className="font-semibold mb-3 bg-blue-100 p-2 text-gray-900">а) Подаци о организацији која врши процену (овлашћена кућа)</h3>
                     <table className="w-full border-collapse border border-gray-300">
                         <tbody>
                             <tr>
@@ -151,7 +161,7 @@ export default function OrganizacijaProceneForm({ pravnoLiceId, onSave }: Organi
                             </tr>
                             <tr>
                                 <td className="border border-gray-300 bg-blue-50 p-2 font-medium text-gray-900">
-                                    ПИБ
+                                    ПИБ <span className="text-xs font-normal text-blue-600">(овлашћене куће)</span>
                                 </td>
                                 <td className="border border-gray-300 p-2">
                                     <input

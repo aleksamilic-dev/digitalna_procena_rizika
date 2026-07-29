@@ -6,7 +6,8 @@ export async function OPTIONS() {
     return new NextResponse(null, { status: 200 });
 }
 
-export async function POST(req: Request,
+export async function POST(
+    req: Request,
     context: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -21,29 +22,31 @@ export async function POST(req: Request,
         await executeWithRetry(async () => {
             const pool = await getDbConnection();
 
-            // Check if procena exists
+            // Proveri da li procena postoji
             const procenaCheck = await pool.query('SELECT id FROM ProcenaRizika WHERE id = $1', [procenaId]);
-
             if (procenaCheck.rows.length === 0) {
                 throw new Error("Procena ne postoji");
             }
 
-            // Check if risk selection already exists
-            const existingSelection = await pool.query('SELECT id FROM RiskSelection WHERE procenaId = $1 AND riskId = $2', [procenaId, risk_id]);
+            // Proveri da li već postoji selekcija za ovaj rizik
+            const existingSelection = await pool.query(
+                'SELECT id FROM RiskSelection WHERE procenaId = $1 AND riskId = $2',
+                [procenaId, risk_id]
+            );
 
             if (existingSelection.rows.length > 0) {
-                // Update existing
+                // Ažuriraj postojeći zapis — GETDATE() umesto CURRENT_TIMESTAMP (Azure SQL)
                 await pool.query(`
-                        UPDATE RiskSelection 
-                        SET dangerLevel = $1, description = $2, updatedAt = CURRENT_TIMESTAMP
-                        WHERE procenaId = $3 AND riskId = $4
-                    `, [danger_level, description || '', procenaId, risk_id]);
+                    UPDATE RiskSelection
+                    SET dangerLevel = $1, description = $2, updatedAt = GETDATE()
+                    WHERE procenaId = $3 AND riskId = $4
+                `, [danger_level, description || '', procenaId, risk_id]);
             } else {
-                // Create new
+                // Kreiraj novi zapis — GETDATE() umesto CURRENT_TIMESTAMP (Azure SQL)
                 await pool.query(`
-                        INSERT INTO RiskSelection (procenaId, riskId, dangerLevel, description, createdAt, updatedAt)
-                        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                    `, [procenaId, risk_id, danger_level, description || '']);
+                    INSERT INTO RiskSelection (procenaId, riskId, dangerLevel, description, createdAt, updatedAt)
+                    VALUES ($1, $2, $3, $4, GETDATE(), GETDATE())
+                `, [procenaId, risk_id, danger_level, description || '']);
             }
         });
 
@@ -60,7 +63,8 @@ export async function POST(req: Request,
     }
 }
 
-export async function GET(req: Request,
+export async function GET(
+    req: Request,
     context: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -76,7 +80,7 @@ export async function GET(req: Request,
             return await pool.query('SELECT * FROM RiskSelection WHERE procenaId = $1', [procenaId]);
         });
 
-        // Map database field names to expected format
+        // Mapiranje naziva kolona (Azure SQL može vraćati lowercase)
         const mappedRows = result.rows.map(row => ({
             riskId: row.riskid || row.riskId,
             dangerLevel: row.dangerlevel || row.dangerLevel,

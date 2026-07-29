@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getDbConnection } from '../../../../lib/db';
 
@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest) {
         await pool.query(`
         UPDATE korisnici 
         SET status = $1, 
-            datum_odobrenja = CURRENT_TIMESTAMP,
+            datum_odobrenja = GETDATE(),
             odobrio_admin = $2
         WHERE id = $3
       `, [status, decoded.id, korisnikId]);

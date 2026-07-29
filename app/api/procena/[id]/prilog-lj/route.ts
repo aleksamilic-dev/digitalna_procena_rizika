@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getDbConnection } from '../../../../../lib/db';
 import { executeWithRetry } from '../../../../../lib/db-retry';
 import { ProcenaRouteContext } from '../../../types';
@@ -97,7 +97,7 @@ export async function PATCH(
         // Sekcija ne postoji - kreiraj je
         await pool.query(`
           INSERT INTO PrilogLj (procenaId, sectionId, groupId, sectionName, itemCount, averageVO, opisIdentifikovanihRizika, createdAt, updatedAt)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, GETDATE(), GETDATE())
         `, [
           procenaId,
           sectionId,
@@ -114,7 +114,7 @@ export async function PATCH(
 
         const query = `
           UPDATE PrilogLj 
-          SET ${setClause}, updatedAt = CURRENT_TIMESTAMP
+          SET ${setClause}, updatedAt = GETDATE()
           WHERE procenaId = $1 AND sectionId = $2
         `;
 

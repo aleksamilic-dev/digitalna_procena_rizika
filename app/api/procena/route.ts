@@ -74,20 +74,17 @@ export async function POST(request: NextRequest) {
         const pravnoLiceNaziv = pravnoLiceResult.rows[0].naziv;
 
         // Kreiraj novu procenu
-        await pool.query(`
-                INSERT INTO ProcenaRizika (naziv, pravnoLiceId, status)
-                VALUES ($1, $2, 'u_toku')
-            `, [`Procena rizika - ${pravnoLiceNaziv}`, pravnoLiceId]);
+        const procenaInsertResult = await pool.query<{ id: number; createdAt: Date; status: string }>(`
+            INSERT INTO ProcenaRizika (naziv, pravnoLiceId, status)
+            OUTPUT INSERTED.id, INSERTED.createdAt, INSERTED.status
+            VALUES ($1, $2, 'u_toku')
+        `, [`Procena rizika - ${pravnoLiceNaziv}`, pravnoLiceId]);
 
-        // Get the inserted record
-        const idResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
-        const procenaId = idResult.rows[0].id;
-        
-        const procenaResult = await pool.query(`
-            SELECT id, createdAt, status FROM ProcenaRizika WHERE id = $1
-        `, [procenaId]);
-        
-        const novaProcena = procenaResult.rows[0];
+        const novaProcena = procenaInsertResult.rows[0];
+
+        if (!novaProcena?.id) {
+            return NextResponse.json({ error: "Greška pri kreiranju procene rizika" }, { status: 500 });
+        }
 
         return NextResponse.json({
             success: true,

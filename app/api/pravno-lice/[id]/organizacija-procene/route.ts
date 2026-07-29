@@ -28,25 +28,28 @@ export async function GET(
 
         // Ako ne postoji, kreiraj sa default vrednostima
         if (!organizacija) {
-            await pool.query(
+            // Koristi OUTPUT INSERTED.id za pouzdano dobijanje ID-ja u pooled konekcijama
+            const newOrgInsert = await pool.query<{ id: number }>(
                 `INSERT INTO OrganizacijaProceneRizika (pravnoLiceId) 
-         VALUES ($1)`,
+                 OUTPUT INSERTED.id
+                 VALUES ($1)`,
                 [pravnoLiceId]
             );
-            
+            const newOrgId = newOrgInsert.rows[0]?.id;
+
             // Fetch the created record
             const newOrgResult = await pool.query(
-                `SELECT * FROM OrganizacijaProceneRizika WHERE pravnoLiceId = $1`,
-                [pravnoLiceId]
+                `SELECT * FROM OrganizacijaProceneRizika WHERE id = $1`,
+                [newOrgId]
             );
             organizacija = newOrgResult.rows[0];
 
             // Dodaj default članove tima
             await pool.query(
                 `INSERT INTO ClanoviTimaProceneRizika (organizacijaId, ime, broj_licence, redni_broj)
-         VALUES 
-           ($1, 'Ivana Stanković, spec. strukovni ssc', '03.27 broj 34147 od 14.07.2023. godine', 1),
-           ($1, 'Mihajlo Milošević, master inž. ZKS', '03.27 broj 21445 od 06.07.2022. godine', 2)`,
+                 VALUES 
+                   ($1, 'Ivana Stanković, spec. strukovni ssc', '03.27 broj 34147 od 14.07.2023. godine', 1),
+                   ($1, 'Mihajlo Milošević, master inž. ZKS', '03.27 broj 21445 od 06.07.2022. godine', 2)`,
                 [organizacija.id]
             );
         }
@@ -124,12 +127,14 @@ export async function POST(
                 ]
             );
         } else {
-            // Insert new
-            await pool.query(
+            // Insert new – koristi OUTPUT INSERTED.id za pouzdano dobijanje ID-ja
+            const insertResult = await pool.query<{ id: number }>(
                 `INSERT INTO OrganizacijaProceneRizika (
-          pravnoLiceId, poslovno_ime, adresa_sediste, maticni_broj, pib, 
-          broj_licence, menadzer_ime, menadzer_licence
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                    pravnoLiceId, poslovno_ime, adresa_sediste, maticni_broj, pib, 
+                    broj_licence, menadzer_ime, menadzer_licence
+                 )
+                 OUTPUT INSERTED.id
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                 [
                     pravnoLiceId,
                     data.organizacija.poslovno_ime,
@@ -141,13 +146,7 @@ export async function POST(
                     data.organizacija.menadzer_licence
                 ]
             );
-            
-            // Get the created record
-            const newOrgResult = await pool.query(
-                `SELECT id FROM OrganizacijaProceneRizika WHERE pravnoLiceId = $1`,
-                [pravnoLiceId]
-            );
-            organizacijaId = newOrgResult.rows[0].id;
+            organizacijaId = insertResult.rows[0]?.id;
         }
 
         // Fetch the organization

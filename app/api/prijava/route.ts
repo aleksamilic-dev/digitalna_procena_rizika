@@ -81,7 +81,10 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error('Greška pri prijavi:', error);
         return NextResponse.json(
-            {greška: 'Došlo je do greške pri prijavi'},
+            {
+                greška: 'Došlo je do greške pri prijavi', 
+                detalji: error instanceof Error ? error.message : String(error)
+            },
             {status: 500}
         );
     }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { ProcenaRouteContext } from '../../../types';
 
 export async function GET(
@@ -46,13 +46,13 @@ export async function POST(
             if (field === 'mera') {
                 await pool.query(`
                     UPDATE tabela_f5 
-                    SET mera = $1, updated_at = CURRENT_TIMESTAMP
+                    SET mera = $1, updated_at = GETDATE()
                     WHERE procena_id = $2 AND item_id = $3
                 `, [value, procenaId, itemId]);
             } else {
                 await pool.query(`
                     UPDATE tabela_f5 
-                    SET opis_i_obrazlozenje = $1, updated_at = CURRENT_TIMESTAMP
+                    SET opis_i_obrazlozenje = $1, updated_at = GETDATE()
                     WHERE procena_id = $2 AND item_id = $3
                 `, [value, procenaId, itemId]);
             }
@@ -63,7 +63,7 @@ export async function POST(
 
             await pool.query(`
                 INSERT INTO tabela_f5 (procena_id, item_id, mera, opis_i_obrazlozenje, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES ($1, $2, $3, $4, GETDATE(), GETDATE())
             `, [procenaId, itemId, meraValue, opisValue]);
         }
 

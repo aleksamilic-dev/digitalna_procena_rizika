@@ -37,7 +37,7 @@ export default function Prijava() {
                 // Preusmeravanje na početnu stranicu
                 router.push('/');
             } else {
-                setError(data.greška || 'Došlo je do greške');
+                setError(data.detalji ? `${data.greška}: ${data.detalji}` : data.greška || 'Došlo je do greške');
             }
         } catch {
             setError('Došlo je do greške pri slanju zahteva');

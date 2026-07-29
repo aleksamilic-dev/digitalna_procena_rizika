@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { ProcenaRouteContext } from '../../../types';
 
 export async function GET(
@@ -45,14 +45,14 @@ export async function POST(
             // Ažuriraj postojeći zapis
             await pool.query(`
                 UPDATE prilog_s 
-                SET vrednost = $1, updated_at = CURRENT_TIMESTAMP
+                SET vrednost = $1, updated_at = GETDATE()
                 WHERE procena_id = $2 AND group_id = $3 AND item_id = $4
             `, [vrednost, procenaId, groupId, itemId]);
         } else {
             // Kreiraj novi zapis
             await pool.query(`
                 INSERT INTO prilog_s (procena_id, group_id, item_id, vrednost, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES ($1, $2, $3, $4, GETDATE(), GETDATE())
             `, [procenaId, groupId, itemId, vrednost]);
         }
 
