@@ -1,7 +1,11 @@
 import sql from 'mssql';
 
-let pool: sql.ConnectionPool | null = null;
-let poolPromise: Promise<sql.ConnectionPool> | null = null;
+type GlobalSql = {
+  mssqlPool: sql.ConnectionPool | null;
+  mssqlPoolPromise: Promise<sql.ConnectionPool> | null;
+};
+
+const globalForSql = globalThis as unknown as GlobalSql;
 
 // Azure SQL connection configuration
 const config: sql.config = {
@@ -25,38 +29,36 @@ const config: sql.config = {
   },
 };
 
-async function connectToAzureSQL() {
-  if (pool) {
-    return pool;
+async function connectToAzureSQL(): Promise<sql.ConnectionPool> {
+  if (globalForSql.mssqlPool && globalForSql.mssqlPool.connected) {
+    return globalForSql.mssqlPool;
   }
 
-  if (poolPromise) {
-    return poolPromise;
+  if (globalForSql.mssqlPoolPromise) {
+    return globalForSql.mssqlPoolPromise;
   }
 
-  if (!poolPromise) {
-    if (!config.server || !config.database || !config.user || !config.password) {
-      throw new Error('Azure SQL connection parameters are not set. Check environment variables.');
-    }
-
-    try {
-      poolPromise = sql.connect(config);
-      pool = await poolPromise;
-      console.log('✅ Connected to Azure SQL Database');
-      
-      pool.on('error', (err: Error) => {
-        console.error('Database pool error:', err);
-        pool = null; // Reset pool on error
-        poolPromise = null;
-      });
-    } catch (error) {
-      poolPromise = null;
-      console.error('❌ Failed to connect to Azure SQL:', error);
-      throw error;
-    }
+  if (!config.server || !config.database || !config.user || !config.password) {
+    throw new Error('Azure SQL connection parameters are not set. Check environment variables.');
   }
 
-  return pool as sql.ConnectionPool;
+  try {
+    globalForSql.mssqlPoolPromise = sql.connect(config);
+    globalForSql.mssqlPool = await globalForSql.mssqlPoolPromise;
+    console.log('✅ Connected to Azure SQL Database');
+
+    globalForSql.mssqlPool.on('error', (err: Error) => {
+      console.error('Database pool error:', err);
+      globalForSql.mssqlPool = null;
+      globalForSql.mssqlPoolPromise = null;
+    });
+  } catch (error) {
+    globalForSql.mssqlPoolPromise = null;
+    console.error('❌ Failed to connect to Azure SQL:', error);
+    throw error;
+  }
+
+  return globalForSql.mssqlPool as sql.ConnectionPool;
 }
 
 // Helper function to execute queries with automatic parameter conversion
@@ -77,23 +79,9 @@ export async function executeQuery<T = Record<string, unknown>>(
         new RegExp(`\\$${index + 1}\\b`, 'g'),
         `@${paramName}`
       );
-      
+
       // Add parameter to request
-      if (param === null || param === undefined) {
-        request.input(paramName, sql.NVarChar, null);
-      } else if (typeof param === 'number') {
-        if (Number.isInteger(param)) {
-          request.input(paramName, sql.Int, param);
-        } else {
-          request.input(paramName, sql.Decimal(15, 2), param);
-        }
-      } else if (typeof param === 'boolean') {
-        request.input(paramName, sql.Bit, param);
-      } else if (param instanceof Date) {
-        request.input(paramName, sql.DateTime2, param);
-      } else {
-        request.input(paramName, sql.NVarChar, String(param));
-      }
+      request.input(paramName, param);
     });
   }
 
@@ -114,7 +102,7 @@ export class QueryResult<T = Record<string, unknown>> {
 // Main export - returns a pool-like object with query method for backward compatibility
 export async function getDbConnection() {
   await connectToAzureSQL();
-  
+
   return {
     query: async <T = Record<string, unknown>>(queryText: string, params?: unknown[]): Promise<QueryResult<T>> => {
       const result = await executeQuery<T>(queryText, params);
@@ -148,7 +136,7 @@ export async function createUsersTable() {
   const adminExists = await pool.query<{count: number}>(`
     SELECT COUNT(*) as count FROM korisnici WHERE je_admin = 1
   `);
-  
+
   if (parseInt(String(adminExists.rows[0].count)) === 0) {
     const bcrypt = await import('bcryptjs');
     const adminPassword = await bcrypt.hash('admin123', 10);
@@ -190,11 +178,11 @@ export async function initializeDatabase() {
     const fs = await import('fs');
     const path = await import('path');
     const schemaPath = path.join(process.cwd(), 'azure_schema.sql');
-    
+
     if (fs.existsSync(schemaPath)) {
       const schema = fs.readFileSync(schemaPath, 'utf8');
       const statements = schema.split('GO').filter(s => s.trim());
-      
+
       for (const statement of statements) {
         if (statement.trim()) {
           await connection.request().query(statement);
@@ -235,10 +223,10 @@ export async function createRiskAssessmentTables() {
 
 // Close the connection pool
 export async function closeConnection() {
-  if (pool) {
-    await pool.close();
-    pool = null;
-    poolPromise = null;
+  if (globalForSql.mssqlPool) {
+    await globalForSql.mssqlPool.close();
+    globalForSql.mssqlPool = null;
+    globalForSql.mssqlPoolPromise = null;
     console.log('Database connection closed');
   }
 }
