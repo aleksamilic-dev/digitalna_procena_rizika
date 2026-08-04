@@ -18,7 +18,7 @@ export async function GET() {
                 pl.adresa,
                 -- Statistike za svaku procenu iz PrilogM tabele
                 (SELECT COUNT(*) FROM "PrilogM" pm WHERE pm."procenaId" = pr.id) as "ukupnoRizika",
-                (SELECT COUNT(*) FROM "PrilogM" pm WHERE pm."procenaId" = pr.id AND pm."kategorijaRizika" IN (1, 2)) as "visokoRizicniRizici"
+                (SELECT COUNT(*) FROM "PrilogM" pm WHERE pm."procenaId" = pr.id AND pm."kategorijaRizika" IN ('1', '2')) as "visokoRizicniRizici"
             FROM "ProcenaRizika" pr
             INNER JOIN "PravnoLice" pl ON pr."pravnoLiceId" = pl.id
             ORDER BY pr."createdAt" DESC
