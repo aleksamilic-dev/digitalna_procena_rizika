@@ -51,13 +51,13 @@ export async function POST(
                 );
                 return NextResponse.json({ success: true, id: body.id });
             } else {
-                await pool.query(
+                const insertResult = await pool.query<{ id: number }>(
                     `INSERT INTO tabela_f5 (procena_id, group_id, mera, opis_i_obrazlozenje) 
-                     VALUES ($1, $2, $3, $4)`,
+                     VALUES ($1, $2, $3, $4)
+                     RETURNING id`,
                     [procenaId, body.group_id, body.mera || '', body.opis_i_obrazlozenje || '']
                 );
-                const idResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
-                return NextResponse.json({ success: true, id: idResult.rows[0].id });
+                return NextResponse.json({ success: true, id: insertResult.rows[0].id });
             }
         }
 
