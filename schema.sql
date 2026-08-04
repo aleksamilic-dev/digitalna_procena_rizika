@@ -382,6 +382,16 @@ CREATE TABLE IF NOT EXISTS prilog_f_data (
     f3_eksterni_kontekst TEXT, f3_interni_kontekst TEXT, f4_identifikacija TEXT, f4_analiza TEXT, f4_vrednovanje TEXT, f6_zakljucak TEXT, updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id)
 );
 
+CREATE TABLE IF NOT EXISTS "PrilogMSections" (
+    id SERIAL PRIMARY KEY, "procenaId" INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    "sectionNumber" INT NOT NULL, "sectionTitle" TEXT, "totalItems" INT DEFAULT 0, "completedItems" INT DEFAULT 0,
+    "averageVO" DECIMAL(10,2), "averageIzlozenost" DECIMAL(10,2), "averageRanjivost" DECIMAL(10,2), "averageVerovatnoca" DECIMAL(10,2), "averagePosledice" DECIMAL(10,2), "averageSteta" DECIMAL(10,2), "averageKriticnost" DECIMAL(10,2), "averageNivoRizika" DECIMAL(10,2), "dominantnaKategorija" TEXT, "prihvatljivostStatus" TEXT, "createdAt" TIMESTAMP DEFAULT NOW(), "updatedAt" TIMESTAMP DEFAULT NOW(), UNIQUE("procenaId", "sectionNumber")
+);
+CREATE TABLE IF NOT EXISTS "PrilogMSummary" (
+    id SERIAL PRIMARY KEY, "procenaId" INT NOT NULL UNIQUE REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    "ukupnoStavki" INT DEFAULT 0, "ukupnoZavrsenih" INT DEFAULT 0, "ukupanNivoRizika" DECIMAL(10,2), "ukupnaKategorija" TEXT, "ukupnaPrihvatljivost" TEXT, "procenatZavrsenosti" DECIMAL(10,2), preporuke TEXT, "createdAt" TIMESTAMP DEFAULT NOW(), "updatedAt" TIMESTAMP DEFAULT NOW()
+);
+
 -- Older attachment routes use snake_case table and column names. Provide
 -- updatable aliases while those routes are progressively migrated.
 DO $$
