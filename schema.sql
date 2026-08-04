@@ -304,6 +304,7 @@ BEGIN
         WHERE table_schema = 'public'
           AND table_type = 'BASE TABLE'
           AND table_name <> lower(table_name)
+          AND table_name NOT IN ('PrilogB1', 'PrilogCh', 'PrilogS', 'PrilogT', 'PrilogU', 'TabelaF5')
     LOOP
         SELECT string_agg(
             CASE
@@ -326,6 +327,44 @@ BEGIN
     END LOOP;
 END $$;
 
+-- Legacy attachment storage used by the existing API routes. These tables use
+-- the route's snake_case contract and are kept separate from the newer tables
+-- above so no data is lost during the MSSQL-to-PostgreSQL transition.
+DROP VIEW IF EXISTS prilog_b1, prilog_ch, prilog_f_data, prilog_s, prilog_t, prilog_u, tabela_f5;
+
+CREATE TABLE IF NOT EXISTS prilog_b1 (
+    id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    group_id INT NOT NULL, svo DECIMAL(10,2), uticaj DECIMAL(10,2), iud DECIMAL(10,4), kvo DECIMAL(10,4), ivo DECIMAL(10,4),
+    created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id, group_id)
+);
+CREATE TABLE IF NOT EXISTS prilog_ch (
+    id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    zahtev_a DECIMAL(10,2), zahtev_b DECIMAL(10,2), zahtev_v DECIMAL(10,2), zahtev_g DECIMAL(10,2), zahtev_d DECIMAL(10,2), zahtev_dj DECIMAL(10,2),
+    final_score DECIMAL(10,2), created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id)
+);
+CREATE TABLE IF NOT EXISTS prilog_t (
+    id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    kapital_score DECIMAL(10,2), menadzeri_score DECIMAL(10,2), osiguranje_score DECIMAL(10,2), registar_score DECIMAL(10,2), zarada_score DECIMAL(10,2), prosek_resursa DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id)
+);
+CREATE TABLE IF NOT EXISTS prilog_u (
+    id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    zahtev_a DECIMAL(10,2), zahtev_b DECIMAL(10,2), zahtev_v DECIMAL(10,2), zahtev_g DECIMAL(10,2), zahtev_d DECIMAL(10,2), final_score DECIMAL(10,2), updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id)
+);
+CREATE TABLE IF NOT EXISTS prilog_s (
+    id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    group_id VARCHAR(50), item_id VARCHAR(50) NOT NULL, vrednost DECIMAL(10,2), created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id, group_id, item_id)
+);
+CREATE TABLE IF NOT EXISTS tabela_f5 (
+    id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    group_id VARCHAR(50), item_id VARCHAR(50), mera TEXT, opis_i_obrazlozenje TEXT, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS prilog_f_data (
+    id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    f1_podaci_o_organizaciji TEXT, f1_menadzer_rizika TEXT, f2_podaci_o_posmatranoj_org TEXT, f2_sifra_delatnosti TEXT, f2_odgovorno_lice TEXT, f2_podaci_o_licima TEXT,
+    f3_eksterni_kontekst TEXT, f3_interni_kontekst TEXT, f4_identifikacija TEXT, f4_analiza TEXT, f4_vrednovanje TEXT, f6_zakljucak TEXT, updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id)
+);
+
 -- Older attachment routes use snake_case table and column names. Provide
 -- updatable aliases while those routes are progressively migrated.
 DO $$
@@ -340,6 +379,7 @@ BEGIN
         WHERE table_schema = 'public'
           AND table_type = 'BASE TABLE'
           AND table_name <> lower(table_name)
+          AND table_name NOT IN ('PrilogB1', 'PrilogCh', 'PrilogS', 'PrilogT', 'PrilogU', 'TabelaF5')
     LOOP
         snake_table_name := lower(regexp_replace(table_record.table_name, '([a-z0-9])([A-Z])', '\1_\2', 'g'));
         IF snake_table_name <> lower(table_record.table_name) THEN
