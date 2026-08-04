@@ -1,3 +1,10 @@
+import dns from 'dns';
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (e) {
+  // ignore
+}
+
 import dotenv from 'dotenv';
 dotenv.config();
 dotenv.config({ path: '.env.production' });
@@ -20,7 +27,7 @@ function createPool(): Pool {
     ssl: { rejectUnauthorized: false },
     max: 5,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 30000,
   });
 }
 
