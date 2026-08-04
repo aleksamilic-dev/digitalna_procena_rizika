@@ -287,3 +287,41 @@ CREATE INDEX IF NOT EXISTS idx_riskselection_procenaid ON "RiskSelection"("proce
 CREATE INDEX IF NOT EXISTS idx_prilogm_procenaid ON "PrilogM"("procenaId");
 CREATE INDEX IF NOT EXISTS idx_organizacija_pravnoliceid ON "OrganizacijaProceneRizika"("pravnoLiceId");
 CREATE INDEX IF NOT EXISTS idx_clanovi_organizacijaid ON "ClanoviTimaProceneRizika"("organizacijaId");
+
+-- Compatibility views for the legacy API. PostgreSQL folds unquoted
+-- identifiers to lowercase, while the migrated tables retain CamelCase names.
+-- The views expose both the original and lowercase forms of CamelCase columns
+-- and remain automatically updatable because each column maps directly to one
+-- base-table column.
+DO $$
+DECLARE
+    table_record RECORD;
+    column_list TEXT;
+BEGIN
+    FOR table_record IN
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_type = 'BASE TABLE'
+          AND table_name <> lower(table_name)
+    LOOP
+        SELECT string_agg(
+            CASE
+                WHEN column_name = lower(column_name) THEN format('%I', column_name)
+                ELSE format('%I, %I AS %I', column_name, column_name, lower(column_name))
+            END,
+            ', ' ORDER BY ordinal_position
+        )
+        INTO column_list
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = table_record.table_name;
+
+        EXECUTE format(
+            'CREATE OR REPLACE VIEW %I AS SELECT %s FROM %I',
+            lower(table_record.table_name),
+            column_list,
+            table_record.table_name
+        );
+    END LOOP;
+END $$;
