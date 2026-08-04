@@ -15,15 +15,15 @@ export async function GET(
         const result = await pool.query(`
                 SELECT 
                     pr.id,
-                    pr.createdAt as datum,
+                    pr."createdAt" as datum,
                     pr.status,
-                    pl.id as pravnoLiceId,
+                    pl.id AS "pravnoLiceId",
                     pl.naziv,
                     pl.pib,
                     pl.adresa
-                FROM ProcenaRizika pr
-                INNER JOIN PravnoLice pl ON pr.pravnoLiceId = pl.id
-                WHERE pr.id = @param1
+                FROM "ProcenaRizika" pr
+                INNER JOIN "PravnoLice" pl ON pr."pravnoLiceId" = pl.id
+                WHERE pr.id = $1
             `, [procenaId]);
 
         if (result.rows.length === 0) {
@@ -57,10 +57,10 @@ export async function DELETE(
         const pool = await getDbConnection();
 
         // Delete related data (CASCADE delete will handle related records)
-        await pool.query('DELETE FROM RiskSelection WHERE procenaId = $1', [procenaId]);
+        await pool.query('DELETE FROM "RiskSelection" WHERE "procenaId" = $1', [procenaId]);
 
         // Delete main assessment
-        const result = await pool.query('DELETE FROM ProcenaRizika WHERE id = $1', [procenaId]);
+        const result = await pool.query('DELETE FROM "ProcenaRizika" WHERE id = $1', [procenaId]);
 
         if (result.rowCount === 0) {
             return NextResponse.json(
@@ -110,7 +110,7 @@ export async function PUT(
         const pool = await getDbConnection();
 
         const result = await pool.query(`
-                UPDATE ProcenaRizika 
+                UPDATE "ProcenaRizika"
                 SET status = $1
                 WHERE id = $2
             `, [status, procenaId]);
