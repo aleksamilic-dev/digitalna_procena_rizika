@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
         // Check if legal entity with this PIB already exists
         const existingEntity = await pool.query<{ id: number; naziv: string }>(
-            'SELECT id, naziv FROM PravnoLice WHERE LTRIM(RTRIM(pib)) = $1',
+            'SELECT id, naziv FROM "PravnoLice" WHERE LTRIM(RTRIM(pib)) = $1',
             [cleanPib]
         );
 
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         // Check if legal entity with this matični broj already exists (if provided)
         if (cleanMaticni) {
             const existingMaticni = await pool.query<{ id: number; naziv: string }>(
-                'SELECT id, naziv FROM PravnoLice WHERE LTRIM(RTRIM(maticni_broj)) = $1',
+                'SELECT id, naziv FROM "PravnoLice" WHERE LTRIM(RTRIM(maticni_broj)) = $1',
                 [cleanMaticni]
             );
             if (existingMaticni.rows.length > 0) {
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
         // Insert PravnoLice using RETURNING id for reliable atomic identity retrieval in pooled MSSQL connections
         const insertResult = await pool.query<{ id: number }>(`
-            INSERT INTO PravnoLice (
+            INSERT INTO "PravnoLice" (
                 naziv,
                 skraceno_poslovno_ime,
                 pib,
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
 
         // Create new risk assessment for this legal entity
         const procenaInsertResult = await pool.query<{ id: number }>(`
-            INSERT INTO ProcenaRizika (naziv, "pravnoLiceId", status) 
+            INSERT INTO "ProcenaRizika" (naziv, "pravnoLiceId", status)
             VALUES ($1, $2, $3)
             RETURNING id
         `, [`Procena rizika - ${cleanNaziv}`, pravnoLiceId, 'u_toku']);
