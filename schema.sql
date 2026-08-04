@@ -325,3 +325,42 @@ BEGIN
         );
     END LOOP;
 END $$;
+
+-- Older attachment routes use snake_case table and column names. Provide
+-- updatable aliases while those routes are progressively migrated.
+DO $$
+DECLARE
+    table_record RECORD;
+    snake_table_name TEXT;
+    column_list TEXT;
+BEGIN
+    FOR table_record IN
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_type = 'BASE TABLE'
+          AND table_name <> lower(table_name)
+    LOOP
+        snake_table_name := lower(regexp_replace(table_record.table_name, '([a-z0-9])([A-Z])', '\1_\2', 'g'));
+        IF snake_table_name <> lower(table_record.table_name) THEN
+            SELECT string_agg(
+                CASE
+                    WHEN column_name = lower(regexp_replace(column_name, '([a-z0-9])([A-Z])', '\1_\2', 'g')) THEN format('%I', column_name)
+                    ELSE format('%I, %I AS %I', column_name, column_name, lower(regexp_replace(column_name, '([a-z0-9])([A-Z])', '\1_\2', 'g')))
+                END,
+                ', ' ORDER BY ordinal_position
+            )
+            INTO column_list
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = table_record.table_name;
+
+            EXECUTE format(
+                'CREATE OR REPLACE VIEW %I AS SELECT %s FROM %I',
+                snake_table_name,
+                column_list,
+                table_record.table_name
+            );
+        END IF;
+    END LOOP;
+END $$;
