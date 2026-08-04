@@ -40,39 +40,23 @@ export async function POST(
       const stepenSS = calculateStvarnaSteta(0, 1000000);
       const { vmsh, stepenVMSH } = calculateVerovatnoMaksimalnaSteta(5000000, prilogMItem.velicinaOpasnosti || 3, 'default');
 
-      // UPSERT in single query - combine check + insert/update
       await pool.query(`
-        IF EXISTS (SELECT 1 FROM PrilogM WHERE procenaId = @param1 AND itemId = @param2 AND groupId = @param3)
-        BEGIN
-          UPDATE PrilogM SET
-            requirement = @param4,
-            velicinaOpasnosti = @param5,
-            izlozenost = @param6,
-            ranjivost = @param7,
-            verovatnoca = @param8,
-            steta = @param9,
-            kriticnost = @param10,
-            posledice = @param11,
-            nivoRizika = @param12,
-            kategorijaRizika = @param13,
-            prihvatljivost = @param14,
-            stepenSS = @param15,
-            stepenVMSH = @param16,
-            vmshIznos = @param17,
-            opisIdentifikovanihRizika = @param18,
-            updatedAt = NOW()
-          WHERE procenaId = @param1 AND itemId = @param2 AND groupId = @param3
-        END
-        ELSE
-        BEGIN
-          INSERT INTO PrilogM (
-            procenaId, itemId, groupId, requirement, velicinaOpasnosti, izlozenost, ranjivost,
-            verovatnoca, steta, kriticnost, posledice, nivoRizika, kategorijaRizika, prihvatljivost,
-            stepenSS, stepenVMSH, vmshIznos, opisIdentifikovanihRizika, createdAt, updatedAt
-          ) VALUES (
-            @param1, @param2, @param3, @param4, @param5, @param6, @param7, @param8, @param9, @param10, @param11, @param12, @param13, @param14, @param15, @param16, @param17, @param18, NOW(), NOW()
-          )
-        END
+        INSERT INTO "PrilogM" (
+          "procenaId", "itemId", "groupId", requirement, "velicinaOpasnosti", izlozenost, ranjivost,
+          verovatnoca, steta, kriticnost, posledice, "nivoRizika", "kategorijaRizika", prihvatljivost,
+          "stepenSS", "stepenVMSH", "vmshIznos", "opisIdentifikovanihRizika"
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+        )
+        ON CONFLICT ("procenaId", "itemId") DO UPDATE SET
+          "groupId" = EXCLUDED."groupId", requirement = EXCLUDED.requirement,
+          "velicinaOpasnosti" = EXCLUDED."velicinaOpasnosti", izlozenost = EXCLUDED.izlozenost,
+          ranjivost = EXCLUDED.ranjivost, verovatnoca = EXCLUDED.verovatnoca, steta = EXCLUDED.steta,
+          kriticnost = EXCLUDED.kriticnost, posledice = EXCLUDED.posledice,
+          "nivoRizika" = EXCLUDED."nivoRizika", "kategorijaRizika" = EXCLUDED."kategorijaRizika",
+          prihvatljivost = EXCLUDED.prihvatljivost, "stepenSS" = EXCLUDED."stepenSS",
+          "stepenVMSH" = EXCLUDED."stepenVMSH", "vmshIznos" = EXCLUDED."vmshIznos",
+          "opisIdentifikovanihRizika" = EXCLUDED."opisIdentifikovanihRizika", "updatedAt" = NOW()
       `, [
         procenaId,
         prilogMItem.id,
@@ -144,7 +128,7 @@ export async function GET(
             verovatnoca, steta, kriticnost, posledice, nivoRizika, kategorijaRizika, prihvatljivost,
             stepenSS, stepenVMSH, vmshIznos, opisIdentifikovanihRizika
           FROM PrilogM 
-          WHERE procenaId = @param1
+          WHERE procenaId = $1
           ORDER BY groupId, itemId
         `, [procenaId]);
       return result.rows;

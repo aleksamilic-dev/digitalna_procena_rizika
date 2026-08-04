@@ -116,6 +116,12 @@ CREATE TABLE IF NOT EXISTS "PrilogM" (
     UNIQUE("procenaId", "itemId")
 );
 
+ALTER TABLE "PrilogM"
+    ADD COLUMN IF NOT EXISTS requirement TEXT,
+    ADD COLUMN IF NOT EXISTS "velicinaOpasnosti" INT,
+    ADD COLUMN IF NOT EXISTS izlozenost INT,
+    ADD COLUMN IF NOT EXISTS ranjivost INT;
+
 CREATE TABLE IF NOT EXISTS "PrilogMSection" (
     id SERIAL PRIMARY KEY,
     "procenaId" INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
