@@ -13,8 +13,9 @@ export async function GET() {
     );
   } catch (error) {
     console.error('Health check failed:', error);
+    const err = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { status: 'error', message: 'Database unreachable' },
+      { status: 'error', message: 'Database unreachable', detail: err },
       { status: 500 }
     );
   }
