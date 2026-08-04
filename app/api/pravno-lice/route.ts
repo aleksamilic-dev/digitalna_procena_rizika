@@ -132,15 +132,15 @@ export async function GET(req: Request) {
         const pool = await getDbConnection();
 
         // Get total count of PravnoLice entities
-        const countResult = await pool.query<{ total: number }>('SELECT COUNT(*) as total FROM PravnoLice');
+        const countResult = await pool.query<{ total: number }>('SELECT COUNT(*) as total FROM "PravnoLice"');
         const total = countResult.rows[0]?.total || 0;
 
         // First select paginated IDs of PravnoLice to prevent LEFT JOIN duplication in OFFSET/FETCH NEXT
         const idsResult = await pool.query<{ id: number }>(`
-            SELECT id FROM PravnoLice
+            SELECT id FROM "PravnoLice"
             ORDER BY id DESC
-            OFFSET @param1 ROWS FETCH NEXT @param2 ROWS ONLY
-        `, [offset, limit]);
+            LIMIT $1 OFFSET $2
+        `, [limit, offset]);
 
         if (idsResult.rows.length === 0) {
             return NextResponse.json({
@@ -175,18 +175,18 @@ export async function GET(req: Request) {
                 pl.telefon_faks,
                 pl.internet_adresa,
                 pl.email,
-                pr.id as procenaId,
-                pr.createdAt as datum,
+                pr.id AS "procenaId",
+                pr."createdAt" as datum,
                 pr.status,
-                u.id as uslugaId,
+                u.id AS "uslugaId",
                 u.naziv_usluge,
                 u.datum_izrade,
                 u.opis as usluga_opis
-            FROM PravnoLice pl
-            LEFT JOIN ProcenaRizika pr ON pl.id = pr.pravnoLiceId
-            LEFT JOIN Usluge u ON pl.id = u.pravnoLiceId
+            FROM "PravnoLice" pl
+            LEFT JOIN "ProcenaRizika" pr ON pl.id = pr."pravnoLiceId"
+            LEFT JOIN "Usluge" u ON pl.id = u."pravnoLiceId"
             WHERE pl.id IN (${idsList})
-            ORDER BY pl.id DESC, pr.createdAt DESC, u.createdAt DESC
+            ORDER BY pl.id DESC, pr."createdAt" DESC, u."createdAt" DESC
         `);
 
         // Group the results by pravno lice

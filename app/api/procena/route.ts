@@ -10,18 +10,18 @@ export async function GET() {
         const result = await pool.query(`
             SELECT 
                 pr.id,
-                pr.createdAt as datum,
+                pr."createdAt" as datum,
                 pr.status,
-                pl.id as pravnoLiceId,
+                pl.id AS "pravnoLiceId",
                 pl.naziv,
                 pl.pib,
                 pl.adresa,
                 -- Statistike za svaku procenu iz PrilogM tabele
-                (SELECT COUNT(*) FROM PrilogM pm WHERE pm.procenaId = pr.id) as ukupnoRizika,
-                (SELECT COUNT(*) FROM PrilogM pm WHERE pm.procenaId = pr.id AND pm.kategorijaRizika IN (1, 2)) as visokoRizicniRizici
-            FROM ProcenaRizika pr
-            INNER JOIN PravnoLice pl ON pr.pravnoLiceId = pl.id
-            ORDER BY pr.createdAt DESC
+                (SELECT COUNT(*) FROM "PrilogM" pm WHERE pm."procenaId" = pr.id) as "ukupnoRizika",
+                (SELECT COUNT(*) FROM "PrilogM" pm WHERE pm."procenaId" = pr.id AND pm."kategorijaRizika" IN (1, 2)) as "visokoRizicniRizici"
+            FROM "ProcenaRizika" pr
+            INNER JOIN "PravnoLice" pl ON pr."pravnoLiceId" = pl.id
+            ORDER BY pr."createdAt" DESC
         `);
 
         return NextResponse.json(result.rows, {
@@ -49,9 +49,10 @@ export async function POST(request: NextRequest) {
 
         // Proveri da li već postoji aktivna procena za ovo pravno lice
         const existingAssessment = await pool.query(`
-            SELECT TOP 1 id, status FROM ProcenaRizika
-            WHERE pravnoLiceId = $1 AND status = 'u_toku'
-            ORDER BY createdAt DESC
+            SELECT id, status FROM "ProcenaRizika"
+            WHERE "pravnoLiceId" = $1 AND status = 'u_toku'
+            ORDER BY "createdAt" DESC
+            LIMIT 1
         `, [pravnoLiceId]);
 
         if (existingAssessment.rows.length > 0) {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get the legal entity name for the assessment title
-        const pravnoLiceResult = await pool.query('SELECT naziv FROM PravnoLice WHERE id = $1', [pravnoLiceId]);
+        const pravnoLiceResult = await pool.query('SELECT naziv FROM "PravnoLice" WHERE id = $1', [pravnoLiceId]);
 
         if (pravnoLiceResult.rows.length === 0) {
             return NextResponse.json(
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
 
         // Kreiraj novu procenu
         const procenaInsertResult = await pool.query<{ id: number; createdAt: Date; status: string }>(`
-            INSERT INTO ProcenaRizika (naziv, "pravnoLiceId", status)
+            INSERT INTO "ProcenaRizika" (naziv, "pravnoLiceId", status)
             VALUES ($1, $2, 'u_toku')
             RETURNING id, "createdAt", status
         `, [`Procena rizika - ${pravnoLiceNaziv}`, pravnoLiceId]);
@@ -113,8 +114,8 @@ export async function PUT(request: NextRequest) {
 
         // Ažuriraj procenu sa novim podacima
         await pool.query(`
-            UPDATE ProcenaRizika 
-            SET naziv_usluge = $1, datum_izrade = $2, updatedAt = NOW()
+            UPDATE "ProcenaRizika"
+            SET naziv_usluge = $1, datum_izrade = $2, "updatedAt" = NOW()
             WHERE id = $3
         `, [naziv_usluge, datum_izrade, procenaId]);
 
@@ -122,7 +123,7 @@ export async function PUT(request: NextRequest) {
         const result = await pool.query(`
             SELECT id, naziv_usluge, datum_izrade,
                    datum_izrade + INTERVAL '3 years' as rok_vazenja
-            FROM ProcenaRizika WHERE id = $1
+            FROM "ProcenaRizika" WHERE id = $1
         `, [procenaId]);
 
         if (result.rows.length === 0) {
