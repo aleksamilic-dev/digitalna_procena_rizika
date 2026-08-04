@@ -1,14 +1,16 @@
 import dns from 'dns';
 try {
   dns.setDefaultResultOrder('ipv4first');
-} catch (e) {
+} catch {
   // ignore
 }
 
 import dotenv from 'dotenv';
-dotenv.config();
-dotenv.config({ path: '.env.production' });
-dotenv.config({ path: '.env.local' });
+// Prefer the environment files that contain the active Neon connection.
+// dotenv does not overwrite existing values, so load the legacy .env last.
+dotenv.config({ path: '.env.local', quiet: true });
+dotenv.config({ path: '.env.production', quiet: true });
+dotenv.config({ quiet: true });
 
 import { Pool } from 'pg';
 
