@@ -47,8 +47,9 @@ jobs:
 
       - name: Create production env file
         run: |
-          echo "DATABASE_URL=postgresql://neondb_owner:npg_xa7Mue6cQENB@ep-aged-bird-asnradwd.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require" > .env.production
-          echo "JWT_SECRET=f6f4f6d78509680321c293f160cf18ddf98a66417192ad7bfa93cd01e5ab6d07" >> .env.production
+          echo "DATABASE_URL=postgresql://neondb_owner:npg_xa7Mue6cQENB@ep-aged-bird-asnradwd.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require" > .env
+          echo "JWT_SECRET=f6f4f6d78509680321c293f160cf18ddf98a66417192ad7bfa93cd01e5ab6d07" >> .env
+          cp .env .env.production
 
       - name: Create deployment package
         run: |

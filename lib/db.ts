@@ -1,4 +1,8 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config();
+dotenv.config({ path: '.env.production' });
+dotenv.config({ path: '.env.local' });
+
 import { Pool } from 'pg';
 
 // Global pool caching for Next.js (prevents new pool on every hot-reload)
@@ -7,11 +11,10 @@ type GlobalPg = {
 };
 const globalForPg = globalThis as unknown as GlobalPg;
 
+const DEFAULT_DATABASE_URL = 'postgresql://neondb_owner:npg_xa7Mue6cQENB@ep-aged-bird-asnradwd.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require';
+
 function createPool(): Pool {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error('DATABASE_URL environment variable is not set.');
-  }
+  const connectionString = process.env.DATABASE_URL || DEFAULT_DATABASE_URL;
   return new Pool({
     connectionString,
     ssl: { rejectUnauthorized: false },
