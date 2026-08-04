@@ -97,7 +97,7 @@ export async function PATCH(
         // Sekcija ne postoji - kreiraj je
         await pool.query(`
           INSERT INTO PrilogLj (procenaId, sectionId, groupId, sectionName, itemCount, averageVO, opisIdentifikovanihRizika, createdAt, updatedAt)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, GETDATE(), GETDATE())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
         `, [
           procenaId,
           sectionId,
@@ -114,7 +114,7 @@ export async function PATCH(
 
         const query = `
           UPDATE PrilogLj 
-          SET ${setClause}, updatedAt = GETDATE()
+          SET ${setClause}, updatedAt = NOW()
           WHERE procenaId = $1 AND sectionId = $2
         `;
 

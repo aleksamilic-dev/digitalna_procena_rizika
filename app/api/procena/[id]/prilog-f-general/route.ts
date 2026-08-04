@@ -56,7 +56,7 @@ export async function POST(
                      f4_analiza = $10,
                      f4_vrednovanje = $11,
                      f6_zakljucak = $12,
-                     updated_at = GETDATE()
+                     updated_at = NOW()
                  WHERE procena_id = $13`,
                 [
                     body.f1_podaci_o_organizaciji,
@@ -84,7 +84,7 @@ export async function POST(
                     f4_identifikacija, f4_analiza, f4_vrednovanje,
                     f6_zakljucak,
                     updated_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, GETDATE())`,
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())`,
                 [
                     procenaId,
                     body.f1_podaci_o_organizaciji,

@@ -75,9 +75,9 @@ export async function POST(request: NextRequest) {
 
         // Kreiraj novu procenu
         const procenaInsertResult = await pool.query<{ id: number; createdAt: Date; status: string }>(`
-            INSERT INTO ProcenaRizika (naziv, pravnoLiceId, status)
-            OUTPUT INSERTED.id, INSERTED.createdAt, INSERTED.status
+            INSERT INTO ProcenaRizika (naziv, "pravnoLiceId", status)
             VALUES ($1, $2, 'u_toku')
+            RETURNING id, "createdAt", status
         `, [`Procena rizika - ${pravnoLiceNaziv}`, pravnoLiceId]);
 
         const novaProcena = procenaInsertResult.rows[0];
@@ -114,14 +114,14 @@ export async function PUT(request: NextRequest) {
         // Ažuriraj procenu sa novim podacima
         await pool.query(`
             UPDATE ProcenaRizika 
-            SET naziv_usluge = $1, datum_izrade = $2, updatedAt = GETDATE()
+            SET naziv_usluge = $1, datum_izrade = $2, updatedAt = NOW()
             WHERE id = $3
         `, [naziv_usluge, datum_izrade, procenaId]);
 
         // Fetch the updated record
         const result = await pool.query(`
             SELECT id, naziv_usluge, datum_izrade,
-                   DATEADD(year, 3, datum_izrade) as rok_vazenja
+                   datum_izrade + INTERVAL '3 years' as rok_vazenja
             FROM ProcenaRizika WHERE id = $1
         `, [procenaId]);
 

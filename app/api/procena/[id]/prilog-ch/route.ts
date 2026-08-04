@@ -83,7 +83,7 @@ export async function POST(
                 UPDATE prilog_ch 
                 SET zahtev_a = $1, zahtev_b = $2, zahtev_v = $3, 
                     zahtev_g = $4, zahtev_d = $5, zahtev_dj = $6, 
-                    final_score = $7, updated_at = GETDATE()
+                    final_score = $7, updated_at = NOW()
                 WHERE procena_id = $8
             `, [zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, zahtev_dj, finalScore, procenaId]);
         } else {
@@ -93,7 +93,7 @@ export async function POST(
                     zahtev_g, zahtev_d, zahtev_dj, final_score, 
                     created_at, updated_at
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, GETDATE(), GETDATE())
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
             `, [procenaId, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, zahtev_dj, finalScore]);
         }
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getDbConnection } from '../../../../../lib/db';
 import { ProcenaRouteContext } from '../../../types';
 
@@ -31,7 +31,7 @@ export async function POST(
             vrednostImovine = $2,
             delatnost = $3,
             stvarnaSteta = $4,
-            updatedAt = GETDATE()
+            updatedAt = NOW()
         WHERE procenaId = $5
       `, [
         financialData.poslovniPrihodi,
@@ -51,7 +51,7 @@ export async function POST(
           createdAt,
           updatedAt
         )
-        VALUES ($1, $2, $3, $4, $5, GETDATE(), GETDATE())
+        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
       `, [
         procenaId,
         financialData.poslovniPrihodi,

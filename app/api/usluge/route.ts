@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { getDbConnection } from '../../../lib/db';
 import { handleApiError } from '../../../lib/api-error';
 
@@ -37,7 +37,7 @@ export async function PUT(req: Request) {
 
         const result = await pool.query(`
             UPDATE Usluge 
-            SET naziv_usluge = $1, datum_izrade = $2, opis = $3, updatedAt = GETDATE()
+            SET naziv_usluge = $1, datum_izrade = $2, opis = $3, updatedAt = NOW()
             WHERE id = $4
         `, [naziv_usluge, datum_izrade, opis, id]);
 

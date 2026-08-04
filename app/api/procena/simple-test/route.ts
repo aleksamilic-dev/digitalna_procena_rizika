@@ -8,7 +8,7 @@ export async function POST() {
         // Simple insert without foreign key constraints
         await pool.query(`
             INSERT INTO ProcenaRizika (naziv, opis, status, createdAt, updatedAt)
-            VALUES ($1, $2, $3, GETDATE(), GETDATE())
+            VALUES ($1, $2, $3, NOW(), NOW())
         `, ['Test Procena Rizika', 'Test opis', 'u_toku']);
 
         const result = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');

@@ -35,7 +35,7 @@ export async function POST() {
                     id INT IDENTITY(1,1) PRIMARY KEY,
                     naziv NVARCHAR(255) NOT NULL,
                     redosled INT NOT NULL,
-                    createdAt DATETIME2 DEFAULT GETDATE()
+                    createdAt DATETIME2 DEFAULT NOW()
                 )
             END
         `);

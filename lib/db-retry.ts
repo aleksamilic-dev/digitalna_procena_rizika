@@ -2,7 +2,8 @@ type RetriableDbError = Error & {
   code?: string;
 };
 
-const RETRIABLE_DB_ERROR_CODES = new Set(['ECONNCLOSED', 'ENOTOPEN']);
+// PostgreSQL error codes for transient connection issues
+const RETRIABLE_DB_ERROR_CODES = new Set(['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', '57P01', '08006', '08001']);
 
 export async function executeWithRetry<T>(
   operation: () => Promise<T>,

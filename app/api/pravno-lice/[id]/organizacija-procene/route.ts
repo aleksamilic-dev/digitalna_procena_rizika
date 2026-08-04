@@ -28,11 +28,11 @@ export async function GET(
 
         // Ako ne postoji, kreiraj sa default vrednostima
         if (!organizacija) {
-            // Koristi OUTPUT INSERTED.id za pouzdano dobijanje ID-ja u pooled konekcijama
+            // Koristi RETURNING id za pouzdano dobijanje ID-ja u pooled konekcijama
             const newOrgInsert = await pool.query<{ id: number }>(
-                `INSERT INTO OrganizacijaProceneRizika (pravnoLiceId) 
-                 OUTPUT INSERTED.id
-                 VALUES ($1)`,
+                `INSERT INTO OrganizacijaProceneRizika ("pravnoLiceId") 
+                 VALUES ($1)
+                 RETURNING id`,
                 [pravnoLiceId]
             );
             const newOrgId = newOrgInsert.rows[0]?.id;
@@ -113,7 +113,7 @@ export async function POST(
           broj_licence = $5,
           menadzer_ime = $6,
           menadzer_licence = $7,
-          updatedAt = GETDATE()
+          updatedAt = NOW()
         WHERE pravnoLiceId = $8`,
                 [
                     data.organizacija.poslovno_ime,
@@ -127,14 +127,14 @@ export async function POST(
                 ]
             );
         } else {
-            // Insert new – koristi OUTPUT INSERTED.id za pouzdano dobijanje ID-ja
+            // Insert new – koristi RETURNING id za pouzdano dobijanje ID-ja
             const insertResult = await pool.query<{ id: number }>(
                 `INSERT INTO OrganizacijaProceneRizika (
-                    pravnoLiceId, poslovno_ime, adresa_sediste, maticni_broj, pib, 
+                    "pravnoLiceId", poslovno_ime, adresa_sediste, maticni_broj, pib, 
                     broj_licence, menadzer_ime, menadzer_licence
                  )
-                 OUTPUT INSERTED.id
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                 RETURNING id`,
                 [
                     pravnoLiceId,
                     data.organizacija.poslovno_ime,

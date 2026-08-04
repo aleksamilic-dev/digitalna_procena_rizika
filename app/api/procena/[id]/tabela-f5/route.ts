@@ -46,13 +46,13 @@ export async function POST(
             if (field === 'mera') {
                 await pool.query(`
                     UPDATE tabela_f5 
-                    SET mera = $1, updated_at = GETDATE()
+                    SET mera = $1, updated_at = NOW()
                     WHERE procena_id = $2 AND item_id = $3
                 `, [value, procenaId, itemId]);
             } else {
                 await pool.query(`
                     UPDATE tabela_f5 
-                    SET opis_i_obrazlozenje = $1, updated_at = GETDATE()
+                    SET opis_i_obrazlozenje = $1, updated_at = NOW()
                     WHERE procena_id = $2 AND item_id = $3
                 `, [value, procenaId, itemId]);
             }
@@ -63,7 +63,7 @@ export async function POST(
 
             await pool.query(`
                 INSERT INTO tabela_f5 (procena_id, item_id, mera, opis_i_obrazlozenje, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, GETDATE(), GETDATE())
+                VALUES ($1, $2, $3, $4, NOW(), NOW())
             `, [procenaId, itemId, meraValue, opisValue]);
         }
 

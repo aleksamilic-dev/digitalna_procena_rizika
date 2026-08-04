@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest) {
         await pool.query(`
         UPDATE korisnici 
         SET status = $1, 
-            datum_odobrenja = GETDATE(),
+            datum_odobrenja = NOW(),
             odobrio_admin = $2
         WHERE id = $3
       `, [status, decoded.id, korisnikId]);

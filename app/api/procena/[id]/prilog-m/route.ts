@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { PrilogMData, calculateStvarnaSteta, calculateVerovatnoMaksimalnaSteta } from '../../../../data/riskDataLoader';
 import { getDbConnection } from '../../../../../lib/db';
 import { executeWithRetry } from '../../../../../lib/db-retry';
@@ -60,7 +60,7 @@ export async function POST(
             stepenVMSH = @param16,
             vmshIznos = @param17,
             opisIdentifikovanihRizika = @param18,
-            updatedAt = GETDATE()
+            updatedAt = NOW()
           WHERE procenaId = @param1 AND itemId = @param2 AND groupId = @param3
         END
         ELSE
@@ -70,7 +70,7 @@ export async function POST(
             verovatnoca, steta, kriticnost, posledice, nivoRizika, kategorijaRizika, prihvatljivost,
             stepenSS, stepenVMSH, vmshIznos, opisIdentifikovanihRizika, createdAt, updatedAt
           ) VALUES (
-            @param1, @param2, @param3, @param4, @param5, @param6, @param7, @param8, @param9, @param10, @param11, @param12, @param13, @param14, @param15, @param16, @param17, @param18, GETDATE(), GETDATE()
+            @param1, @param2, @param3, @param4, @param5, @param6, @param7, @param8, @param9, @param10, @param11, @param12, @param13, @param14, @param15, @param16, @param17, @param18, NOW(), NOW()
           )
         END
       `, [
@@ -234,7 +234,7 @@ export async function PATCH(
 
         const query = `
           UPDATE PrilogM 
-          SET ${setClause}, updatedAt = GETDATE()
+          SET ${setClause}, updatedAt = NOW()
           WHERE procenaId = $1 AND itemId = $2
         `;
 

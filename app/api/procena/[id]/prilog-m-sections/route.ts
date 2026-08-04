@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getDbConnection } from '../../../../../lib/db';
 import { ProcenaRouteContext } from '../../../types';
 
@@ -89,7 +89,7 @@ export async function POST(
               averageNivoRizika = @averageNivoRizika,
               dominantnaKategorija = @dominantnaKategorija,
               prihvatljivostStatus = @prihvatljivostStatus,
-              updatedAt = GETDATE()
+              updatedAt = NOW()
           WHEN NOT MATCHED THEN
             INSERT (procenaId, sectionNumber, sectionTitle, totalItems, completedItems,
               averageVO, averageIzlozenost, averageRanjivost, averageVerovatnoca,
@@ -98,7 +98,7 @@ export async function POST(
             VALUES (@procenaId, @sectionNumber, @sectionTitle, @totalItems, @completedItems,
               @averageVO, @averageIzlozenost, @averageRanjivost, @averageVerovatnoca,
               @averagePosledice, @averageSteta, @averageKriticnost, @averageNivoRizika,
-              @dominantnaKategorija, @prihvatljivostStatus, GETDATE(), GETDATE());
+              @dominantnaKategorija, @prihvatljivostStatus, NOW(), NOW());
         `, [
           procenaId,
           sections[0]?.sectionNumber,
@@ -131,7 +131,7 @@ export async function POST(
               ukupnaPrihvatljivost = @param6,
               procenatZavrsenosti = @param7,
               preporuke = @param8,
-              updatedAt = GETDATE()
+              updatedAt = NOW()
             WHERE procenaId = @param1
           END
           ELSE
@@ -140,7 +140,7 @@ export async function POST(
               procenaId, ukupnoStavki, ukupnoZavrsenih, ukupanNivoRizika,
               ukupnaKategorija, ukupnaPrihvatljivost, procenatZavrsenosti,
               preporuke, createdAt, updatedAt
-            ) VALUES (@param1, @param2, @param3, @param4, @param5, @param6, @param7, @param8, GETDATE(), GETDATE())
+            ) VALUES (@param1, @param2, @param3, @param4, @param5, @param6, @param7, @param8, NOW(), NOW())
           END
         `, [
           procenaId,

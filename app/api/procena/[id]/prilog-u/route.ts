@@ -63,7 +63,7 @@ export async function POST(
                      zahtev_g = $4,
                      zahtev_d = $5,
                      final_score = $6,
-                     updated_at = GETDATE()
+                     updated_at = NOW()
                  WHERE procena_id = $7`,
                 [
                     body.zahtev_a,
@@ -79,7 +79,7 @@ export async function POST(
             await pool.query(
                 `INSERT INTO prilog_u (
                     procena_id, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, final_score, updated_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, GETDATE())`,
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
                 [
                     procenaId,
                     body.zahtev_a,

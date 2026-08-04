@@ -58,7 +58,7 @@ export async function POST(req: Request) {
             }
         }
 
-        // Insert PravnoLice using OUTPUT INSERTED.id for reliable atomic identity retrieval in pooled MSSQL connections
+        // Insert PravnoLice using RETURNING id for reliable atomic identity retrieval in pooled MSSQL connections
         const insertResult = await pool.query<{ id: number }>(`
             INSERT INTO PravnoLice (
                 naziv,
@@ -77,8 +77,8 @@ export async function POST(req: Request) {
                 email,
                 internet_adresa
             )
-            OUTPUT INSERTED.id
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            RETURNING id
         `, [
             cleanNaziv,
             skraceno_poslovno_ime?.trim() || null,
@@ -105,9 +105,9 @@ export async function POST(req: Request) {
 
         // Create new risk assessment for this legal entity
         const procenaInsertResult = await pool.query<{ id: number }>(`
-            INSERT INTO ProcenaRizika (naziv, pravnoLiceId, status) 
-            OUTPUT INSERTED.id
+            INSERT INTO ProcenaRizika (naziv, "pravnoLiceId", status) 
             VALUES ($1, $2, $3)
+            RETURNING id
         `, [`Procena rizika - ${cleanNaziv}`, pravnoLiceId, 'u_toku']);
 
         const procenaId = procenaInsertResult.rows[0]?.id;
@@ -276,7 +276,7 @@ export async function PUT(req: Request) {
 
             const insertResult = await pool.query<{ id: number }>(`
                 INSERT INTO Usluge (pravnoLiceId, naziv_usluge, datum_izrade, opis)
-                OUTPUT INSERTED.id
+                RETURNING id
                 VALUES ($1, $2, $3, $4)
             `, [pravnoLiceId, naziv_usluge, datum_izrade || new Date().toISOString().split('T')[0], opis || null]);
 
@@ -300,7 +300,7 @@ export async function PUT(req: Request) {
             SET naziv = COALESCE($1, naziv),
                 pib = COALESCE($2, pib),
                 maticni_broj = COALESCE($3, maticni_broj),
-                updatedAt = GETDATE()
+                updatedAt = NOW()
             WHERE id = $4
         `, [naziv || null, pib || null, maticni_broj || null, id]);
 

@@ -45,14 +45,14 @@ export async function POST(
             // Ažuriraj postojeći zapis
             await pool.query(`
                 UPDATE prilog_s 
-                SET vrednost = $1, updated_at = GETDATE()
+                SET vrednost = $1, updated_at = NOW()
                 WHERE procena_id = $2 AND group_id = $3 AND item_id = $4
             `, [vrednost, procenaId, groupId, itemId]);
         } else {
             // Kreiraj novi zapis
             await pool.query(`
                 INSERT INTO prilog_s (procena_id, group_id, item_id, vrednost, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, GETDATE(), GETDATE())
+                VALUES ($1, $2, $3, $4, NOW(), NOW())
             `, [procenaId, groupId, itemId, vrednost]);
         }
 

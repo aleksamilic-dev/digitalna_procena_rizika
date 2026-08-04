@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getDbConnection } from "../../../../../lib/db";
 import { executeWithRetry } from "../../../../../lib/db-retry";
 
@@ -35,17 +35,17 @@ export async function POST(
             );
 
             if (existingSelection.rows.length > 0) {
-                // Ažuriraj postojeći zapis — GETDATE() umesto CURRENT_TIMESTAMP (Azure SQL)
+                // Ažuriraj postojeći zapis — NOW() umesto CURRENT_TIMESTAMP (Azure SQL)
                 await pool.query(`
                     UPDATE RiskSelection
-                    SET dangerLevel = $1, description = $2, updatedAt = GETDATE()
+                    SET dangerLevel = $1, description = $2, updatedAt = NOW()
                     WHERE procenaId = $3 AND riskId = $4
                 `, [danger_level, description || '', procenaId, risk_id]);
             } else {
-                // Kreiraj novi zapis — GETDATE() umesto CURRENT_TIMESTAMP (Azure SQL)
+                // Kreiraj novi zapis — NOW() umesto CURRENT_TIMESTAMP (Azure SQL)
                 await pool.query(`
                     INSERT INTO RiskSelection (procenaId, riskId, dangerLevel, description, createdAt, updatedAt)
-                    VALUES ($1, $2, $3, $4, GETDATE(), GETDATE())
+                    VALUES ($1, $2, $3, $4, NOW(), NOW())
                 `, [procenaId, risk_id, danger_level, description || '']);
             }
         });
