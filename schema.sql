@@ -339,7 +339,7 @@ END $$;
 DO $$
 DECLARE relation_name TEXT;
 BEGIN
-    FOREACH relation_name IN ARRAY ARRAY['prilog_b1', 'prilog_ch', 'prilog_f_data', 'prilog_s', 'prilog_t', 'prilog_u', 'tabela_f5']
+    FOREACH relation_name IN ARRAY ARRAY['prilog_b1', 'prilog_ch', 'prilog_f_data', 'prilog_lj', 'prilog_s', 'prilog_t', 'prilog_u', 'tabela_f5']
     LOOP
         IF EXISTS (
             SELECT 1 FROM pg_class WHERE relname = relation_name AND relkind = 'v'
@@ -381,6 +381,11 @@ CREATE TABLE IF NOT EXISTS prilog_f_data (
     f1_podaci_o_organizaciji TEXT, f1_menadzer_rizika TEXT, f2_podaci_o_posmatranoj_org TEXT, f2_sifra_delatnosti TEXT, f2_odgovorno_lice TEXT, f2_podaci_o_licima TEXT,
     f3_eksterni_kontekst TEXT, f3_interni_kontekst TEXT, f4_identifikacija TEXT, f4_analiza TEXT, f4_vrednovanje TEXT, f6_zakljucak TEXT, updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id)
 );
+CREATE TABLE IF NOT EXISTS prilog_lj (
+    id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
+    section_id VARCHAR(50) NOT NULL, group_id VARCHAR(50), section_name TEXT, item_count INT DEFAULT 0,
+    average_vo DECIMAL(10,2), opis_identifikovanih_rizika TEXT, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id, section_id)
+);
 
 CREATE TABLE IF NOT EXISTS "PrilogMSections" (
     id SERIAL PRIMARY KEY, "procenaId" INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
@@ -406,7 +411,7 @@ BEGIN
         WHERE table_schema = 'public'
           AND table_type = 'BASE TABLE'
           AND table_name <> lower(table_name)
-          AND table_name NOT IN ('PrilogB1', 'PrilogCh', 'PrilogS', 'PrilogT', 'PrilogU', 'TabelaF5')
+          AND table_name NOT IN ('PrilogB1', 'PrilogCh', 'PrilogS', 'PrilogT', 'PrilogU', 'PrilogLj', 'TabelaF5')
     LOOP
         snake_table_name := lower(regexp_replace(table_record.table_name, '([a-z0-9])([A-Z])', '\1_\2', 'g'));
         IF snake_table_name <> lower(table_record.table_name) THEN

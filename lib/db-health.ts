@@ -26,7 +26,7 @@ export async function getDatabaseHealth(options: DatabaseHealthOptions = {}): Pr
   const pool = await getDbConnection();
 
   const result = await pool.query<{ currentTime: Date; version: string }>(
-    'SELECT GETDATE() as currentTime, @@VERSION as version'
+    'SELECT NOW() as "currentTime", version() as version'
   );
 
   const tableFilter = options.tableNames?.length
@@ -37,7 +37,7 @@ export async function getDatabaseHealth(options: DatabaseHealthOptions = {}): Pr
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_type = 'BASE TABLE' 
-      AND table_schema = 'dbo'
+      AND table_schema = 'public'
       ${tableFilter}
       ORDER BY table_name
     `, options.tableNames);

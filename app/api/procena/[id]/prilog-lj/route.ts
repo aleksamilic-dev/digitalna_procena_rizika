@@ -24,15 +24,11 @@ export async function GET(
 
       const result = await pool.query(`
           SELECT 
-            sectionId as "sectionId", 
-            groupId as "groupId", 
-            sectionName as "sectionName", 
-            itemCount as "itemCount", 
-            averageVO as "averageVO", 
-            opisIdentifikovanihRizika as "opisIdentifikovanihRizika"
-          FROM PrilogLj 
-          WHERE procenaId = $1
-          ORDER BY groupId, sectionId
+            section_id as "sectionId", group_id as "groupId", section_name as "sectionName",
+            item_count as "itemCount", average_vo as "averageVO", opis_identifikovanih_rizika as "opisIdentifikovanihRizika"
+          FROM prilog_lj
+          WHERE procena_id = $1
+          ORDER BY group_id, section_id
         `, [procenaId]);
       return result.rows;
     });
@@ -89,14 +85,14 @@ export async function PATCH(
 
       // Proveri da li sekcija postoji
       const existingRecord = await pool.query(
-        'SELECT * FROM PrilogLj WHERE procenaId = $1 AND sectionId = $2',
+        'SELECT * FROM prilog_lj WHERE procena_id = $1 AND section_id = $2',
         [procenaId, sectionId]
       );
 
       if (existingRecord.rows.length === 0) {
         // Sekcija ne postoji - kreiraj je
         await pool.query(`
-          INSERT INTO PrilogLj (procenaId, sectionId, groupId, sectionName, itemCount, averageVO, opisIdentifikovanihRizika, createdAt, updatedAt)
+          INSERT INTO prilog_lj (procena_id, section_id, group_id, section_name, item_count, average_vo, opis_identifikovanih_rizika, created_at, updated_at)
           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
         `, [
           procenaId,
@@ -113,9 +109,9 @@ export async function PATCH(
         const values = [procenaId, sectionId, ...updateFields.map(field => updateData[field])];
 
         const query = `
-          UPDATE PrilogLj 
-          SET ${setClause}, updatedAt = NOW()
-          WHERE procenaId = $1 AND sectionId = $2
+          UPDATE prilog_lj
+          SET ${setClause.replace('opisIdentifikovanihRizika', 'opis_identifikovanih_rizika')}, updated_at = NOW()
+          WHERE procena_id = $1 AND section_id = $2
         `;
 
         await pool.query(query, values);
