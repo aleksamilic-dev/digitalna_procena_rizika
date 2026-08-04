@@ -6,34 +6,33 @@ export async function POST() {
         const pool = await getDbConnection();
         
         // Create a test legal entity first
-        const existingPravnoLice = await pool.query('SELECT id FROM PravnoLice WHERE pib = $1', ['123456789']);
+        const existingPravnoLice = await pool.query('SELECT id FROM "PravnoLice" WHERE pib = $1', ['123456789']);
         
         let pravnoLiceId;
         if (existingPravnoLice.rows.length > 0) {
             pravnoLiceId = existingPravnoLice.rows[0].id;
         } else {
-            await pool.query(`
-                INSERT INTO PravnoLice (naziv, pib, adresa, telefon, email)
+            const pravnoLiceResult = await pool.query(`
+                INSERT INTO "PravnoLice" (naziv, pib, adresa, telefon, email)
                 VALUES ($1, $2, $3, $4, $5)
+                RETURNING id
             `, ['Test Kompanija d.o.o.', '123456789', 'Test adresa 123, Beograd', '+381 11 123 4567', 'test@test.com']);
-            const pravnoLiceResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
             pravnoLiceId = pravnoLiceResult.rows[0].id;
         }
         
         // Get the admin user ID
-        const adminUser = await pool.query('SELECT TOP 1 id FROM korisnici WHERE je_admin = 1 ORDER BY id');
+        const adminUser = await pool.query('SELECT id FROM korisnici WHERE je_admin = TRUE ORDER BY id LIMIT 1');
             
         if (adminUser.rows.length === 0) {
             throw new Error('No admin user found. Please ensure the database is properly initialized.');
         }
         
         // Create a test risk assessment
-        await pool.query(`
-            INSERT INTO ProcenaRizika (naziv, opis, status, pravnoLiceId, korisnikId)
+        const procenaResult = await pool.query(`
+            INSERT INTO "ProcenaRizika" (naziv, opis, status, "pravnoLiceId", "korisnikId")
             VALUES ($1, $2, $3, $4, $5)
+            RETURNING id
         `, ['Test Procena Rizika', 'Ovo je test procena rizika kreirana automatski za testiranje sistema', 'u_toku', pravnoLiceId, adminUser.rows[0].id]);
-
-        const procenaResult = await pool.query('SELECT CAST(SCOPE_IDENTITY() as INT) as id');
         const procenaId = procenaResult.rows[0].id;
         
         return NextResponse.json({
