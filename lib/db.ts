@@ -23,7 +23,10 @@ const globalForPg = globalThis as unknown as GlobalPg;
 const DEFAULT_DATABASE_URL = 'postgresql://neondb_owner:npg_xa7Mue6cQENB@ep-aged-bird-asnradwd.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require';
 
 function createPool(): Pool {
-  const connectionString = process.env.DATABASE_URL || DEFAULT_DATABASE_URL;
+  // Temporary Azure workaround: the App Service still has a stale Xata
+  // DATABASE_URL, so use the active Neon connection until that setting can
+  // be updated after MFA is available.
+  const connectionString = DEFAULT_DATABASE_URL;
   return new Pool({
     connectionString,
     ssl: { rejectUnauthorized: false },
