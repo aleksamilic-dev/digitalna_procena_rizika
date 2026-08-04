@@ -336,7 +336,18 @@ END $$;
 -- Legacy attachment storage used by the existing API routes. These tables use
 -- the route's snake_case contract and are kept separate from the newer tables
 -- above so no data is lost during the MSSQL-to-PostgreSQL transition.
-DROP VIEW IF EXISTS prilog_b1, prilog_ch, prilog_f_data, prilog_s, prilog_t, prilog_u, tabela_f5;
+DO $$
+DECLARE relation_name TEXT;
+BEGIN
+    FOREACH relation_name IN ARRAY ARRAY['prilog_b1', 'prilog_ch', 'prilog_f_data', 'prilog_s', 'prilog_t', 'prilog_u', 'tabela_f5']
+    LOOP
+        IF EXISTS (
+            SELECT 1 FROM pg_class WHERE relname = relation_name AND relkind = 'v'
+        ) THEN
+            EXECUTE format('DROP VIEW %I', relation_name);
+        END IF;
+    END LOOP;
+END $$;
 
 CREATE TABLE IF NOT EXISTS prilog_b1 (
     id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
