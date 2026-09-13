@@ -20,7 +20,11 @@ type GlobalPg = {
 };
 const globalForPg = globalThis as unknown as GlobalPg;
 
-const DEFAULT_DATABASE_URL = 'postgresql://neondb_owner:npg_xa7Mue6cQENB@ep-aged-bird-asnradwd.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require';
+// Baza "procena_rizika" (Neon, isti endpoint kao ranije korisceni "neondb").
+// Prelazak sa "neondb" je izvrsen posle uskladjivanja priloga sa SRPS A.L2.003:2025:
+// stare selekcije vise ne odgovaraju izmenjenim stavkama u Prilogu V i Prilogu Lj.
+// Stara baza "neondb" je ostavljena netaknuta kao rezervna kopija.
+const DEFAULT_DATABASE_URL = 'postgresql://neondb_owner:npg_xa7Mue6cQENB@ep-aged-bird-asnradwd.c-4.eu-central-1.aws.neon.tech/procena_rizika?sslmode=require';
 
 function createPool(): Pool {
   // Temporary Azure workaround: the App Service still has a stale Xata
