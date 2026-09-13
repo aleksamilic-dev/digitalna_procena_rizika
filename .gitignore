@@ -47,3 +47,9 @@ web.config
 
 # Azure logs
 *.log
+
+# lokalni bekapi baze (sadrze podatke i hash lozinki)
+/backups
+
+# licencirani SRPS dokumenti - zabranjeno umnozavanje i koriscenje na mrezi
+/documentation
