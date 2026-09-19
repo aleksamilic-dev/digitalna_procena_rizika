@@ -40,7 +40,8 @@ export default function TabelaF5({ procenaId, readOnly = false }: TabelaF5Props)
                 const res = await fetch(`/api/procena/${procenaId}/prilog-f5`);
                 if (res.ok) {
                     const data = await res.json();
-                    setItems(data);
+                    // group_id je VARCHAR kolona - bez Number() se sačuvane mere ne prikazuju posle osvežavanja
+                    setItems(data.map((item: F5Item) => ({ ...item, group_id: Number(item.group_id) })));
                 }
             } catch (err) {
                 console.error("Error fetching F5 items", err);

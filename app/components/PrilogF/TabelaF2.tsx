@@ -29,7 +29,7 @@ export default function TabelaF2({ data, onChange, readOnly }: TabelaF2Props) {
                     </tr>
                     <tr>
                         <td className="border border-gray-800 p-2 align-top font-semibold text-gray-900">
-                            2. Шифра делатности, матични број, ПИБ
+                            2. Шифра делатности
                         </td>
                         <td className="border border-gray-800 p-0">
                             <textarea

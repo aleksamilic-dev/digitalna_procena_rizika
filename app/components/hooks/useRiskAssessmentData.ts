@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { RiskGroupData } from "../../data/riskGroups";
-import { PrilogMData } from "../../data/riskDataLoader";
+import { PrilogMData, normalizePrilogMRow } from "../../data/riskDataLoader";
 
 interface RiskSelection {
     risk_id: string;
@@ -18,8 +18,7 @@ interface FinancialData {
 export function useRiskAssessmentData(
     procenaId: string,
     riskGroupData: RiskGroupData,
-    onSelectionChange?: (selections: RiskSelection[]) => void,
-    onPrilogMUpdate?: (prilogMData: PrilogMData[]) => void
+    onSelectionChange?: (selections: RiskSelection[]) => void
 ) {
     const [selections, setSelections] = useState<Map<string, RiskSelection>>(new Map());
     const [prilogMData, setPrilogMData] = useState<Map<string, PrilogMData>>(new Map());
@@ -64,10 +63,11 @@ export function useRiskAssessmentData(
                     selectionsData.forEach((item: { riskId?: string; riskid?: string; dangerLevel?: number; dangerlevel?: number; description?: string }) => {
                         // Handle different field name cases from database
                         const riskId = item.riskId || item.riskid;
-                        const dangerLevel = item.dangerLevel || item.dangerlevel;
+                        const dangerLevel = item.dangerLevel ?? item.dangerlevel;
                         const description = item.description || '';
 
-                        if (riskId && dangerLevel) {
+                        // dangerLevel 0 = "Није применљиво" (N/A)
+                        if (riskId && dangerLevel !== undefined && dangerLevel !== null) {
                             selectionsMap.set(riskId, {
                                 risk_id: riskId,
                                 danger_level: dangerLevel,
@@ -92,57 +92,12 @@ export function useRiskAssessmentData(
                         const prilogMMap = new Map<string, PrilogMData>();
 
                         // Učitaj SVE podatke, ne filtriraj po grupi
-                        prilogMData.forEach((item: unknown) => {
-                            const dbItem = item as {
-                                id: string;
-                                groupid?: string;
-                                groupId?: string;
-                                requirement: string;
-                                velicinaopasnosti?: number;
-                                velicinaOpasnosti?: number;
-                                izlozenost: number;
-                                ranjivost: number;
-                                verovatnoca: number;
-                                posledice: number;
-                                steta: number;
-                                kriticnost: number;
-                                nivorizika?: number;
-                                nivoRizika?: number;
-                                kategorijarizika?: number;
-                                kategorijaRizika?: number;
-                                prihvatljivost: 'PRIHVATLJIV' | 'NEPRIHVATLJIV' | null;
-                                opisidentifikovanihrizika?: string;
-                                opisIdentifikovanihRizika?: string;
-                            };
-
-                            const mappedItem: PrilogMData = {
-                                id: dbItem.id,
-                                groupId: dbItem.groupid || dbItem.groupId || '',
-                                requirement: dbItem.requirement,
-                                velicinaOpasnosti: dbItem.velicinaopasnosti || dbItem.velicinaOpasnosti || null,
-                                izlozenost: dbItem.izlozenost || null,
-                                ranjivost: dbItem.ranjivost || null,
-                                verovatnoca: dbItem.verovatnoca || null,
-                                posledice: dbItem.posledice || null,
-                                steta: dbItem.steta || null,
-                                kriticnost: dbItem.kriticnost || null,
-                                nivoRizika: dbItem.nivorizika || dbItem.nivoRizika || null,
-                                kategorijaRizika: dbItem.kategorijarizika || dbItem.kategorijaRizika || null,
-                                prihvatljivost: dbItem.prihvatljivost,
-                                opisIdentifikovanihRizika: dbItem.opisidentifikovanihrizika || dbItem.opisIdentifikovanihRizika || null
-                            };
+                        prilogMData.forEach((item: Record<string, unknown>) => {
+                            const mappedItem = normalizePrilogMRow(item);
                             prilogMMap.set(mappedItem.id, mappedItem);
                         });
 
                         setPrilogMData(prilogMMap);
-
-                        // Za callback, pošalji samo podatke trenutne grupe
-                        if (onPrilogMUpdate) {
-                            const currentGroupData = Array.from(prilogMMap.values()).filter(item =>
-                                item.groupId === riskGroupData.id
-                            );
-                            onPrilogMUpdate(currentGroupData);
-                        }
                     }
                 }
 
@@ -156,34 +111,21 @@ export function useRiskAssessmentData(
         if (procenaId && riskGroupData.id) {
             loadExistingData();
         }
-    }, [procenaId, riskGroupData.id, loadFinancialData, onPrilogMUpdate, onSelectionChange]); // Dodao sve dependencies
+    }, [procenaId, riskGroupData.id, loadFinancialData, onSelectionChange]); // Dodao sve dependencies
 
-    // Listen for financial data saved events - UKLANJAM OVO JER NIJE POTREBNO
-    // useEffect(() => {
-    //     const handleFinancialDataSaved = async (event: Event) => {
-    //         const customEvent = event as CustomEvent;
-    //         if (customEvent.detail.procenaId === procenaId) {
-    //             // Pozovi loadFinancialData direktno bez dependency
-    //             try {
-    //                 const finResponse = await fetch(`/api/procena/${procenaId}/financial-data`);
-    //                 if (finResponse.ok) {
-    //                     const finData = await finResponse.json();
-    //                     const hasValid = finData.poslovniPrihodi > 0 && finData.vrednostImovine > 0;
-    //                     setHasValidFinancialData(hasValid);
-    //                     setCurrentFinancialData(finData);
-    //                 }
-    //             } catch (error) {
-    //                 console.error('Error loading financial data:', error);
-    //             }
-    //         }
-    //     };
+    // Finansijski podaci sačuvani iz zaglavlja procene (OptimizedRiskAssessment)
+    useEffect(() => {
+        const handleFinancialDataSaved = (event: Event) => {
+            const { procenaId: savedProcenaId, data } = (event as CustomEvent<{ procenaId: string; data: FinancialData }>).detail;
+            if (savedProcenaId === procenaId) {
+                setHasValidFinancialData(data.poslovniPrihodi > 0 && data.vrednostImovine > 0);
+                setCurrentFinancialData(data);
+            }
+        };
 
-    //     window.addEventListener('financialDataSaved', handleFinancialDataSaved);
-
-    //     return () => {
-    //         window.removeEventListener('financialDataSaved', handleFinancialDataSaved);
-    //     };
-    // }, [procenaId]); // Uklonio loadFinancialData iz dependencies
+        window.addEventListener('financialDataSaved', handleFinancialDataSaved);
+        return () => window.removeEventListener('financialDataSaved', handleFinancialDataSaved);
+    }, [procenaId]);
 
     return {
         selections,

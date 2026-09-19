@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UTICAJ_DELATNOSTI } from '../data/riskDataLoader';
 
 interface FinancialData {
   poslovniPrihodi: number;
@@ -72,12 +71,6 @@ export default function FinancialDataForm({ procenaId, initialData, onSave, onCl
       [field]: value
     }));
   };
-
-  const delatnostiOptions = Object.keys(UTICAJ_DELATNOSTI).map(key => ({
-    value: key,
-    label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-    iud: UTICAJ_DELATNOSTI[key]
-  }));
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -166,28 +159,6 @@ export default function FinancialDataForm({ procenaId, initialData, onSave, onCl
               </p>
             </div>
 
-            {/* Delatnost */}
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-2">
-                Delatnost organizacije
-              </label>
-              <select
-                value={formData.delatnost}
-                onChange={(e) => handleChange('delatnost', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                required
-              >
-                {delatnostiOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label} (Iud: {option.iud})
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-900 mt-1">
-                Иуд – Indeks uticaja delatnosti (decimalni prikaz uticaja delatnosti) služi za proračun verovatno maksimalne štete (VMŠ)
-              </p>
-            </div>
-
             {/* Stvarna šteta */}
             <div>
               <label className="block text-sm font-medium text-gray-800 mb-2">
@@ -214,12 +185,9 @@ export default function FinancialDataForm({ procenaId, initialData, onSave, onCl
                     ((formData.stvarnaSteta / formData.poslovniPrihodi) * 100).toFixed(2) : 0}% od poslovnih prihoda
                 </div>
                 <div>
-                  <strong>Иуд (indeks uticaja delatnosti):</strong> {UTICAJ_DELATNOSTI[formData.delatnost]}
+                  <strong>Иуд (indeks uticaja delatnosti):</strong> računa se u Prilogu B1 po grupama rizika (Уд = Сво/ΣСво)
                   <br />
-                  <span className="text-xs text-gray-600">Decimalni prikaz uticaja delatnosti za proračun VMŠ (Prilog B1, tabela B1, kol. 4)</span>
-                </div>
-                <div>
-                  <strong>Ukupna vrednost za kalkulacije:</strong> {(formData.poslovniPrihodi + formData.vrednostImovine).toLocaleString()} RSD
+                  <span className="text-xs text-gray-600">VMŠ = SVnpoz × Иво, gde je Иво = Иуд × Кво (tačka 6.3.2, Izmena 1)</span>
                 </div>
               </div>
             </div>

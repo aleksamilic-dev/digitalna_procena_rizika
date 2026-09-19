@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { RiskGroupData } from "../data/riskGroups";
-import { PrilogMData } from "../data/riskDataLoader";
+import { PrilogMData, primeniRucnuIzmenu, recalculatePrilogM, resolveFinansijskiPodaci } from "../data/riskDataLoader";
 import { useRiskAssessmentData } from "./hooks/useRiskAssessmentData";
 import { useRiskAssessmentActions } from "./hooks/useRiskAssessmentActions";
 import { getCellClass } from "./utils/riskAssessmentHelpers";
@@ -38,7 +38,7 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
         setHasValidFinancialData,
         currentFinancialData,
         setCurrentFinancialData
-    } = useRiskAssessmentData(procenaId, riskGroupData, onSelectionChange, onPrilogMUpdate);
+    } = useRiskAssessmentData(procenaId, riskGroupData, onSelectionChange);
 
     // Use custom hook for actions
     const {
@@ -57,7 +57,6 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
         prilogMData,
         setPrilogMData,
         onSelectionChange,
-        onPrilogMUpdate,
         setHasUnsavedChanges,
         currentFinancialData,
         hasValidFinancialData
@@ -77,6 +76,38 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
         setHasUnsavedChanges(false);
     }, [riskGroupData.id]);
 
+    // Kolone 7 i 9-12 zavise od Priloga B1 (Svo svih grupa) i finansijskih podataka:
+    // preračunaj ih posle učitavanja i posle izmene finansijskih podataka
+    useEffect(() => {
+        if (initialLoading || readOnly) return;
+        const { finansijskiPodaci, usingDefaultFinancialData } =
+            resolveFinansijskiPodaci(currentFinancialData, hasValidFinancialData);
+        const items = Array.from(prilogMData.values());
+        const recalculated = recalculatePrilogM(items, finansijskiPodaci, usingDefaultFinancialData);
+        const promenjeno = recalculated.some((item, index) => {
+            const staro = items[index];
+            return item.steta !== staro.steta || item.posledice !== staro.posledice ||
+                item.nivoRizika !== staro.nivoRizika || item.kategorijaRizika !== staro.kategorijaRizika ||
+                item.prihvatljivost !== staro.prihvatljivost || item.stepenSS !== staro.stepenSS ||
+                item.stepenVMSH !== staro.stepenVMSH || item.vmshIznos !== staro.vmshIznos;
+        });
+        const oznakaPromenjena = recalculated.some((item, index) =>
+            item.usingDefaultFinancialData !== items[index].usingDefaultFinancialData);
+        if (promenjeno || oznakaPromenjena) {
+            setPrilogMData(new Map(recalculated.map(item => [item.id, item])));
+        }
+        if (promenjeno) {
+            setHasUnsavedChanges(true);
+        }
+    }, [initialLoading, readOnly, currentFinancialData, hasValidFinancialData, prilogMData, setPrilogMData]);
+
+    // Kontrolna tabla (statistike po grupama) dobija sve stavke svih grupa
+    useEffect(() => {
+        if (!initialLoading && onPrilogMUpdate) {
+            onPrilogMUpdate(Array.from(prilogMData.values()));
+        }
+    }, [initialLoading, prilogMData, onPrilogMUpdate]);
+
     // Create getCellClass function with current selections
     const getCellClassWithSelections = (riskId: string, level: number, hasContent: boolean) => {
         return getCellClass(riskId, level, hasContent, selections);
@@ -87,7 +118,10 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
             const newData = new Map(prevData);
             const item = newData.get(itemId);
             if (item) {
-                const updatedItem = { ...item, [field]: value };
+                // Ručna izmena štete ili posledica preračunava posledice, nivo, kategoriju i prihvatljivost
+                const updatedItem = field === 'opisIdentifikovanihRizika'
+                    ? { ...item, [field]: value as string }
+                    : { ...item, ...primeniRucnuIzmenu(item, field, value as number) };
                 newData.set(itemId, updatedItem);
             }
             return newData;

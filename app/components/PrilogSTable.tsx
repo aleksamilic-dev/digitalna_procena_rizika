@@ -88,8 +88,9 @@ export default function PrilogSTable({ procenaId, onUpdateItem, readOnly = false
                     });
 
                     // Zatim ažuriraj sa podacima iz baze
-                    data.forEach((item: { group_id: number; item_id: number; vrednost: string }) => {
-                        const compositeId = item.group_id * 100 + item.item_id;
+                    data.forEach((item: { group_id: string | number; item_id: string | number; vrednost: string | null }) => {
+                        // group_id i item_id su VARCHAR kolone - bez Number() bi se ključ spojio kao tekst
+                        const compositeId = Number(item.group_id) * 100 + Number(item.item_id);
                         const existing = dataMap.get(compositeId);
                         if (existing) {
                             dataMap.set(compositeId, {
@@ -151,7 +152,7 @@ export default function PrilogSTable({ procenaId, onUpdateItem, readOnly = false
 
         // Sačuvaj u bazu
         try {
-            await fetch(`/api/procena/${procenaId}/prilog-s`, {
+            const response = await fetch(`/api/procena/${procenaId}/prilog-s`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -162,8 +163,12 @@ export default function PrilogSTable({ procenaId, onUpdateItem, readOnly = false
                     vrednost: editValue
                 }),
             });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
         } catch (error) {
             console.error('Greška pri čuvanju Prilog S podataka:', error);
+            alert('Грешка при чувању Прилога С. Покушајте поново.');
         }
 
         setEditingCell(null);

@@ -39,8 +39,9 @@ export async function POST(
 ) {
     try {
         const { id: procenaId } = await context.params;
+        // Zahtev в) se ne prima od klijenta - preuzima se iz Priloga U (niže)
         const {
-            zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, zahtev_dj
+            zahtev_a, zahtev_b, zahtev_g, zahtev_d, zahtev_dj
         } = await request.json();
 
 
@@ -54,13 +55,21 @@ export async function POST(
 
         const resourceScore = Number(tResult.rows[0]?.prosek_resursa || 0);
 
+        // Zahtev 5.3 в) se automatski prenosi iz Priloga U, tabela U.1 (Prilog Ћ, tabela Ћ.2)
+        const uResult = await pool.query<{ final_score: number | null }>(`
+            SELECT final_score FROM prilog_u
+            WHERE procena_id = $1
+        `, [procenaId]);
+        const prilogUScore = uResult.rows[0]?.final_score;
+        const zahtevV = prilogUScore !== null && prilogUScore !== undefined ? Number(prilogUScore) : null;
+
         // 2. Calculate Final Score
         // Formula: Sum(Fulfillment * ResourceScore) / 6 (items) -> Or explicitly following the table logic
         // Actually, the table implies "Ocena opstih zahteva" is likely the average of the column 4 (Ocena)
         // Row Assessment = Fulfillment (0-5) * ResourceScore
         // Final Score = Average of Row Assessments
 
-        const fulfillments = [zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, zahtev_dj];
+        const fulfillments = [zahtev_a, zahtev_b, zahtevV, zahtev_g, zahtev_d, zahtev_dj];
         // Filter out nulls if necessary, but standard seems to require all filled. Assume null=0 if missing.
 
         const validFulfillments = fulfillments.map(f => Number(f ?? 0));
@@ -85,7 +94,7 @@ export async function POST(
                     zahtev_g = $4, zahtev_d = $5, zahtev_dj = $6, 
                     final_score = $7, updated_at = NOW()
                 WHERE procena_id = $8
-            `, [zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, zahtev_dj, finalScore, procenaId]);
+            `, [zahtev_a, zahtev_b, zahtevV, zahtev_g, zahtev_d, zahtev_dj, finalScore, procenaId]);
         } else {
             await pool.query(`
                 INSERT INTO prilog_ch (
@@ -94,7 +103,7 @@ export async function POST(
                     created_at, updated_at
                 )
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-            `, [procenaId, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, zahtev_dj, finalScore]);
+            `, [procenaId, zahtev_a, zahtev_b, zahtevV, zahtev_g, zahtev_d, zahtev_dj, finalScore]);
         }
 
         return NextResponse.json({ success: true, finalScore, resourceScore });

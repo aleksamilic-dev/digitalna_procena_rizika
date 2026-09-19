@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { RISK_GROUPS } from '../data/riskGroups';
-import { getRiskGroupData, type PrilogMData } from '../data/riskDataLoader';
+import { getRiskGroupData, normalizePrilogMRow, type PrilogMData } from '../data/riskDataLoader';
 import RiskAssessmentTable from './RiskAssessmentTable';
 import FinancialDataForm from './FinancialDataForm';
 
@@ -36,20 +36,34 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
     const [activeGroupId, setActiveGroupId] = useState<string>('group1');
     const [allSelections, setAllSelections] = useState<Map<string, RiskSelection[]>>(new Map());
     const [allPrilogMData, setAllPrilogMData] = useState<Map<string, PrilogMData[]>>(new Map());
-    const [statistics, setStatistics] = useState({
-        totalItems: 0,
-        completedItems: 0,
-        completionPercentage: 0,
-        highRiskItems: 0,
-        riskCategories: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    });
     const [loading, setLoading] = useState(false);
     const [showFinancialForm, setShowFinancialForm] = useState(false);
+    const [financialInitialData, setFinancialInitialData] = useState<{
+        poslovniPrihodi: number;
+        vrednostImovine: number;
+        delatnost: string;
+        stvarnaSteta: number;
+    } | undefined>(undefined);
+
+    // Forma mora da krene od sačuvanih podataka, inače bi "Sačuvaj" upisao podrazumevane 1.000.000 / 5.000.000
+    const openFinancialForm = async () => {
+        try {
+            const response = await fetch(`/api/procena/${procenaId}/financial-data`);
+            if (response.ok) {
+                const data = await response.json();
+                setFinancialInitialData(data.poslovniPrihodi > 0 ? data : undefined);
+            }
+        } catch (error) {
+            console.error('Greška pri učitavanju finansijskih podataka:', error);
+        }
+        setShowFinancialForm(true);
+    };
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-    const calculateStatistics = useCallback((prilogMData: Map<string, PrilogMData[]>) => {
+    // Statistika se računa iz trenutnih podataka; ranije je useCallback([]) čitao zastarele
+    // izbore, pa se N/A stavke nisu brojale kao završene i napredak nije mogao da dostigne 100 %
+    const statistics = useMemo(() => {
         let totalItems = 0;
-        let completedItems = 0;
         let highRiskItems = 0;
         const riskCategories = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
@@ -66,9 +80,8 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
         // Izračunaj statistike iz Prilog M podataka - samo jedinstvene stavke
         const uniqueCompletedItems = new Set<string>();
 
-        prilogMData.forEach(groupData => {
+        allPrilogMData.forEach(groupData => {
             groupData.forEach(item => {
-                // Dodaj u set za jedinstvene stavke
                 uniqueCompletedItems.add(item.id);
 
                 if (item.kategorijaRizika) {
@@ -82,7 +95,6 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
         });
 
         // Dodaj N/A stavke (danger_level === 0) kao završene
-        // Koristimo allSelections direktno bez dodavanja u dependency array
         allSelections.forEach((groupSelections) => {
             groupSelections.forEach(selection => {
                 if (selection.danger_level === 0) {
@@ -91,18 +103,17 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
             });
         });
 
-        completedItems = uniqueCompletedItems.size;
+        const completedItems = uniqueCompletedItems.size;
         const completionPercentage = totalItems > 0 ? Math.min(100, Math.round((completedItems / totalItems) * 100)) : 0;
 
-        setStatistics({
+        return {
             totalItems,
             completedItems,
             completionPercentage,
             highRiskItems,
             riskCategories
-        });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        };
+    }, [allPrilogMData, allSelections]);
 
     // Učitaj postojeće podatke pri inicijalizaciji - samo jednom
     useEffect(() => {
@@ -126,52 +137,14 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
 
                     // Dodeli podatke odgovarajućim grupama
                     allData.forEach((item: unknown) => {
-                        // Type assertion for database item
-                        const dbItem = item as {
-                            id: string;
-                            groupid?: string;
-                            groupId?: string;
-                            requirement: string;
-                            velicinaopasnosti?: number;
-                            velicinaOpasnosti?: number;
-                            izlozenost: number;
-                            ranjivost: number;
-                            verovatnoca: number;
-                            posledice: number;
-                            steta: number;
-                            kriticnost: number;
-                            nivorizika?: number;
-                            nivoRizika?: number;
-                            kategorijarizika?: number;
-                            kategorijaRizika?: number;
-                            prihvatljivost: 'PRIHVATLJIV' | 'NEPRIHVATLJIV' | null;
-                        };
-
-                        // Mapiranje polja iz baze na očekivani format
-                        // Mapiranje groupId - možda se čuva kao broj umesto "groupX"
-                        let groupId = dbItem.groupid || dbItem.groupId || '';
-                        if (groupId && !groupId.startsWith('group')) {
-                            groupId = `group${groupId}`;
-                        }
-
-                        const mappedItem: PrilogMData = {
-                            id: dbItem.id,
-                            groupId: groupId,
-                            requirement: dbItem.requirement,
-                            velicinaOpasnosti: dbItem.velicinaopasnosti || dbItem.velicinaOpasnosti || null,
-                            izlozenost: dbItem.izlozenost || null,
-                            ranjivost: dbItem.ranjivost || null,
-                            verovatnoca: dbItem.verovatnoca || null,
-                            posledice: dbItem.posledice || null,
-                            steta: dbItem.steta || null,
-                            kriticnost: dbItem.kriticnost || null,
-                            nivoRizika: dbItem.nivorizika || dbItem.nivoRizika || null,
-                            kategorijaRizika: dbItem.kategorijarizika || dbItem.kategorijaRizika || null,
-                            prihvatljivost: dbItem.prihvatljivost
-                        };
+                        // PostgreSQL vraća ključeve malim slovima i VARCHAR vrednosti (nivoRizika,
+                        // kategorijaRizika) kao tekst - normalizuj u brojeve
+                        const dbItem = item as Record<string, unknown>;
+                        const mappedItem: PrilogMData = normalizePrilogMRow(dbItem);
+                        const groupId = mappedItem.groupId;
 
                         // Debug: prikaži mapiranje groupId
-                        const originalGroupId = dbItem.groupid || dbItem.groupId || '';
+                        const originalGroupId = String(dbItem.groupid || dbItem.groupId || '');
                         if (DEBUG_RISK_ASSESSMENT && originalGroupId !== groupId) {
                             debugLog(`🔍 Mapiranje groupId: "${originalGroupId}" → "${groupId}"`);
                         }
@@ -204,7 +177,6 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                     });
 
                     setAllPrilogMData(newPrilogMData);
-                    calculateStatistics(newPrilogMData);
                 } else {
                     // Inicijalizuj prazne podatke ako nema odgovora
                     const newPrilogMData = new Map<string, PrilogMData[]>();
@@ -212,7 +184,6 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                         newPrilogMData.set(group.id, []);
                     });
                     setAllPrilogMData(newPrilogMData);
-                    calculateStatistics(newPrilogMData);
                 }
 
             } catch (error) {
@@ -223,46 +194,41 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                     newPrilogMData.set(group.id, []);
                 });
                 setAllPrilogMData(newPrilogMData);
-                calculateStatistics(newPrilogMData);
             } finally {
                 setLoading(false);
             }
         };
 
         loadAllData();
-    }, [procenaId, calculateStatistics]); // Only depend on procenaId, which should be stable
+    }, [procenaId]); // Only depend on procenaId, which should be stable
 
 
 
-    // Callback za ažuriranje selekcija
-    const handleSelectionChange = useCallback((groupId: string, selections: RiskSelection[]) => {
-        setAllSelections(prev => {
-            const newMap = new Map(prev);
-            newMap.set(groupId, selections);
-            return newMap;
+    // Callback za ažuriranje selekcija - tabela šalje izbore svih grupa, pa se grupišu po ID-u rizika
+    const handleSelectionChange = useCallback((selections: RiskSelection[]) => {
+        const newMap = new Map<string, RiskSelection[]>();
+        selections.forEach(selection => {
+            const groupId = `group${selection.risk_id.split('.')[0]}`;
+            newMap.set(groupId, [...(newMap.get(groupId) || []), selection]);
         });
+        setAllSelections(newMap);
     }, []);
 
-    // Callback za ažuriranje Prilog M podataka
-    const handlePrilogMUpdate = useCallback((groupId: string, prilogMData: PrilogMData[]) => {
-        setAllPrilogMData(prev => {
-            const newMap = new Map(prev);
-            newMap.set(groupId, prilogMData);
-            calculateStatistics(newMap);
-            return newMap;
+    // Callback za ažuriranje Prilog M podataka - dobija sve stavke svih grupa, jer promena
+    // Svo jedne grupe (Prilog B1) menja štetu i nivo rizika stavki u ostalim grupama
+    const handlePrilogMUpdate = useCallback((prilogMData: PrilogMData[]) => {
+        const newMap = new Map<string, PrilogMData[]>();
+        RISK_GROUPS.forEach(group => newMap.set(group.id, []));
+        prilogMData.forEach(item => {
+            newMap.get(item.groupId)?.push(item);
         });
-    }, [calculateStatistics]);
+        setAllPrilogMData(newMap);
+    }, []);
 
-    // Create stable callbacks for the active group - use ref to avoid recreating
-    const activeGroupIdRef = useRef(activeGroupId);
-    activeGroupIdRef.current = activeGroupId;
-
-    const activeGroupSelectionCallback = useCallback((selections: RiskSelection[]) => {
-        handleSelectionChange(activeGroupIdRef.current, selections);
-    }, [handleSelectionChange]);
+    const activeGroupSelectionCallback = handleSelectionChange;
 
     const activeGroupPrilogMCallback = useCallback((prilogMData: PrilogMData[]) => {
-        handlePrilogMUpdate(activeGroupIdRef.current, prilogMData);
+        handlePrilogMUpdate(prilogMData);
     }, [handlePrilogMUpdate]);
 
     // Dobij podatke za aktivnu grupu
@@ -384,7 +350,7 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
 
                             {!readOnly && (
                                 <button
-                                    onClick={() => setShowFinancialForm(true)}
+                                    onClick={openFinancialForm}
                                     className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
                                 >
                                     💰 Finansijski podaci
@@ -669,9 +635,11 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                 {showFinancialForm && (
                     <FinancialDataForm
                         procenaId={procenaId}
+                        initialData={financialInitialData}
                         onSave={(data) => {
                             debugLog('Finansijski podaci sačuvani:', data);
-                            // Možda treba da se osvežе podaci
+                            // Tabela procene preračunava štetu i nivo rizika sa novim podacima
+                            window.dispatchEvent(new CustomEvent('financialDataSaved', { detail: { procenaId, data } }));
                         }}
                         onClose={() => setShowFinancialForm(false)}
                     />

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { PrilogMData } from "../data/riskDataLoader";
+import { PrilogMData, AgregatniRedM, aggregatePrilogMPoNivoima } from "../data/riskDataLoader";
 import Image from "next/image";
 
 interface PrilogMTableProps {
@@ -73,7 +73,7 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
             '3.3': 'Постојање могућности наступања негативних последица на основу: постојања, потпуности и адекватности интерне регулативе којом се предвиђа надлежност у области надзора и контроле законитости пословања, поштовања интерних процедура од стране запослених и одговорних лица и спровођења мера за превенцију и поступање са ризиком',
             '3.4': 'Постојање могућности наступања негативних последица на основу: постојања, потпуности и адекватности интерне регулативе и процедура за мониторинг, закључивања и реализације домаћих и међународних уговора и превенције настанка имовинске штете услед закључења неповољних пословних аранжмана',
             '3.5': 'Постојање могућности наступања негативних последица на основу: постојања, потпуности и адекватности унутрашњих механизама за праћење судских, управних и других спорова и поступака које корисник води',
-            '3.6': 'Постојање могућности наступања негативних последица на основу: постојања, потпуности и адекватности интерне регулативе којом се конституише адекватан систем унутрашње контроле над радом запослених и ангажованих лица/ организација задужених за физичку и техничку заштиту лица, имовине и континуитета пословања',
+            '3.6': 'Постојање могућности наступања негативних последица на основу: постојања, потпуности и адекватности интерне регулативе којом се конституише адекватан систем унутрашње контроле над радом запослених и ангажованих лица/организација задужених за физичку и техничку заштиту лица, имовине и континуитета пословања',
             '3.7': 'Постојање могућности наступања негативних последица на основу: постојања неадекватних, непотпуних или противречних закона и осталих прописа који, сами по себи или у вези један са другим, проузрокују тешкоће у погледу законитог функционисања организације и безбедности њеног пословања',
 
             // Sekcija 4 - ОД ПРОТИВПРАВНОГ ДЕЛОВАЊА
@@ -86,11 +86,11 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
 
             // Sekcija 5 - ОД ПОЖАРА
             '5.1': 'Постојање нормативних аката у складу са правном регулативом (правилник о заштити од пожара, односно правила заштите од пожара, план заштите од пожара објекта или подручја)',
-            '5.2': 'Постојање категоризације правног лица и организовање у складу са процењом угрожености у складу са прописима',
+            '5.2': 'Постојање категоризације правног лица и организовање у складу са проценом угрожености у складу са прописима',
             '5.3': 'Постојање кадровске и техничке попуњености и квалификованост људства које ради на пословима заштите од пожара у складу са прописима',
             '5.4': 'Постојање и одржавање уређаја, опреме, инсталација и средстава за заштиту од пожара према Закону о заштити од пожара, техничким прописима и упутству произвођача опреме',
-            '5.5': 'Постојање програма основне обуке и свидетеља обуке запослених из области заштите од пожара',
-            '5.6': 'Постојање свидетеља о надзору противпожарне инспекције и постојање наложених мера заштите од пожара',
+            '5.5': 'Постојање програма основне обуке и евиденција обуке запослених из области заштите од пожара',
+            '5.6': 'Постојање евиденција о надзору противпожарне инспекције и постојање наложених мера заштите од пожара',
 
             // Sekcija 6 - ОД ЕЛЕМЕНТАРНИХ НЕПОГОДА И ДРУГИХ НЕСРЕЋА
             '6.1': 'Постојање планске документације у области смањења ризика и управљања ванредним ситуацијама у складу са захтевима важећег закона (процена ризика од катастрофа, план заштите и спасавања у ванредним ситуацијама, план смањења ризика од катастрофа, екстерни план заштите од великог удеса и план заштите од удеса, ако се доноси)',
@@ -101,11 +101,11 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
             // Sekcija 7 - ОД ЕКСПЛОЗИЈА
             '7.1': 'Постојање нормативних аката и дозвола за рад са одређеним врстама експлозивних материјала (течним, чврстим, гасовитим) у складу са правном регулативом',
             '7.2': 'Постојање нормативних аката у складу са правном регулативом за заштиту од пожара објеката и/или подручја (и другим нормативима којима се уређује ова област)',
-            '7.3': 'Постојање категоризације правног лица и организовања у складу са процењом угрожености и правном регулативом',
+            '7.3': 'Постојање категоризације правног лица и организовања у складу са проценом угрожености и правном регулативом',
             '7.4': 'Постојање кадровске и техничке испуњености и квалификованости запослених који раде на пословима заштите од експлозије и рукују експлозивним материјама у складу са правном регулативом',
             '7.5': 'Постојање и одржавање уређаја, опреме, инсталација и средстава за заштиту од експлозије према релевантним законима и техничким прописима, нормативима и упутствима произвођача опреме',
-            '7.6': 'Постојање програма основне обуке и свидетеља обуке запослених из области заштите од експлозија и руковања експлозивним материјама',
-            '7.7': 'Постојање свидетеља о надзору државне инспекције и наложених мера заштите од експлозије',
+            '7.6': 'Постојање програма основне обуке и евиденција обуке запослених из области заштите од експлозија и руковања експлозивним материјама',
+            '7.7': 'Постојање евиденција о надзору државне инспекције и наложених мера заштите од експлозије',
 
             // Sekcija 8 - ОД НЕУСАГЛАШЕНОСТИ СА СТАНДАРДИМА
             '8.1': 'SRPS A.L2.002, Друштвена безбедност – Услуге приватног обезбеђења – Захтеви и упутство за оцењивање усаглашености',
@@ -115,11 +115,11 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
             '8.5': 'SRPS EN 17483-3, Услуге приватног обезбеђења – Заштита критичне инфраструктуре – Део 3: Услуге обезбеђења у поморству и лукама',
             '8.6': 'SRPS ISO 18788, Систем менаџмента услугама приватног обезбеђења – Захтеви са упутством за коришћење',
             '8.7': 'SRPS ISO 28000:2022, Безбедност и отпорност – Систем менаџмента безбедношћу – Захтеви',
-            '8.8': 'SRPS ISO 22301, Безбедност и отпорност – Систем менаџмента континуитетом пословања – Захтеви',
-            '8.9': 'SRPS ISO 9001, Систем менаџмента квалитетом – Захтеви',
+            '8.8': 'SRPS ISO 22301, Безбедност и отпорност – Системи менаџмента континуитетом пословања – Захтеви',
+            '8.9': 'SRPS ISO 9001, Системи менаџмента квалитетом – Захтеви',
 
             // Sekcija 9 - ПО ЖИВОТНУ СРЕДИНУ
-            '9.1': 'Постојање извештаја о безбедности са свим неопходним елементима, план у случају удеса да ли је примењена релевантна правна регулатива у области заштите животне средине',
+            '9.1': 'Постојање извештаја о безбедности са свим неопходним елементима, план у случају удеса и да ли је примењена релевантна правна регулатива у области заштите животне средине',
             '9.2': 'Постојање доказа о оспособљености запослених за реаговање у случају удеса, периодична провера оспособљености запослених, одговорних лица и адекватна опремљеност одговарајућом опремом за реаговање у ванредним ситуацијама или еколошким инцидентима',
             '9.3': 'Постојање утврђеног нивоа биохазардног потенцијала коришћене технологије',
             '9.4': 'Постојање надзора и директне комуникације са одговорним лицима у државним службама за реаговање у ванредним ситуацијама или еколошким инцидентима',
@@ -136,7 +136,7 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
             '11.1': 'Постојање потпуног и адекватног документа сходно законској регулативи',
             '11.2': 'Постојање урађене процене ризика ИКТ система и идентификованих свих законом предвиђених мера заштите ИКТ система',
             '11.3': 'Постојање процедура на који начин организација врши обавештавање о инцидентима и да ли је одређено лице за управљање инцидентима',
-            '11.4': 'Постојање одређеног лица за послове информационе безбедности и/или ангажовање спољних експерата и да ли је организација урадила ревизију докумената сходно законској регулативи',
+            '11.4': 'Постојање одређеног лица за послове информационе безбедности и/или ангажовање спољних експерата и да ли је организација урадила ревизију документа сходно законској регулативи',
             '11.5': 'Постојање интерних процедура рада и мера безбедности у ИКТ систему које регулишу забрану коришћења приватних налога е-поште, инсталирање приватних апликација и забрану приступа друштвеним мрежама'
         };
         return subsectionTitles[subsectionId] || null;
@@ -179,48 +179,84 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
         }
     };
 
-    // Calculate Aggregate Data
-    const allItems = Array.from(prilogMData.values()).filter(item =>
-        item.velicinaOpasnosti && item.posledice && item.steta
+    // Agregatne vrednosti po faktorima (npr. 1.1), grupama rizika i za organizaciju (Prilog M, kol. 4-12)
+    const agregati = aggregatePrilogMPoNivoima(Array.from(prilogMData.values()));
+
+    const krugBoja = (vrednost: number) =>
+        vrednost >= 4 ? 'bg-red-600' : vrednost === 3 ? 'bg-yellow-600' : vrednost === 2 ? 'bg-blue-600' : 'bg-green-600';
+    const nivoBoja = (nivo: number) =>
+        nivo >= 20 ? 'bg-red-700' : nivo >= 15 ? 'bg-red-600' : nivo >= 10 ? 'bg-orange-600' : nivo >= 6 ? 'bg-yellow-600' : 'bg-green-600';
+    const kategorijaBoja = (kategorija: number) =>
+        kategorija === 1 ? 'bg-red-700' : kategorija === 2 ? 'bg-orange-600' : kategorija === 3 ? 'bg-yellow-600' : kategorija === 4 ? 'bg-blue-600' : 'bg-green-600';
+
+    const krug = (vrednost: number) => (
+        <td className="border border-gray-800 px-1 py-2 text-center">
+            <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${krugBoja(vrednost)}`}>
+                {vrednost}
+            </span>
+        </td>
     );
 
-    let totalData = null;
-    if (allItems.length > 0) {
-        const avgNivoRizika = Math.round(
-            allItems.reduce((sum, item) => sum + (item.nivoRizika || 0), 0) / allItems.length
-        );
+    // Kolone 3-12 i kolona "Детаљи" za agregatni red
+    const agregatneCelije = (agregat: AgregatniRedM | undefined, oznaka: string) => agregat ? (
+        <>
+            {krug(agregat.velicinaOpasnosti)}
+            {krug(agregat.izlozenost)}
+            {krug(agregat.ranjivost)}
+            {krug(agregat.verovatnoca)}
+            {krug(agregat.steta)}
+            {krug(agregat.kriticnost)}
+            {krug(agregat.posledice)}
+            <td className="border border-gray-800 px-1 py-2 text-center">
+                <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${nivoBoja(agregat.nivoRizika)}`}>
+                    {agregat.nivoRizika}
+                </span>
+            </td>
+            <td className="border border-gray-800 px-1 py-2 text-center">
+                <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${kategorijaBoja(agregat.kategorijaRizika)}`}>
+                    {agregat.kategorijaRizika}
+                </span>
+            </td>
+            <td className="border border-gray-800 px-1 py-2 text-center">
+                <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${agregat.prihvatljivost === 'NEPRIHVATLJIV' ? 'bg-red-600' : 'bg-green-600'}`}>
+                    {agregat.prihvatljivost === 'NEPRIHVATLJIV' ? 'NE' : 'DA'}
+                </span>
+            </td>
+            <td className="border border-gray-800 px-1 py-2 text-center">
+                <span className="text-gray-600 text-xs">{oznaka}</span>
+            </td>
+        </>
+    ) : (
+        <td className="border border-gray-800 px-1 py-2 text-center text-gray-500 text-xs" colSpan={11}>
+            Нема података
+        </td>
+    );
 
-        // Determine Category based on П.1 - tačno prema tabeli
-        let avgKategorija = 5;
-        if ([20, 25].includes(avgNivoRizika)) {
-            avgKategorija = 1; // PRVA - Izrazito veliki
-        } else if ([10, 12, 15, 16].includes(avgNivoRizika)) {
-            avgKategorija = 2; // DRUGA - Veliki rizik
-        } else if ([6, 7, 8, 9].includes(avgNivoRizika)) {
-            avgKategorija = 3; // TREĆA - Umereno veliki
-        } else if ([3, 4, 5].includes(avgNivoRizika)) {
-            avgKategorija = 4; // ČETVRTA - Mali
-        } else if ([1, 2].includes(avgNivoRizika)) {
-            avgKategorija = 5; // PETA - Vrlo mali, zanemarljiv
-        }
-
-        // Determine Acceptability based on П.2 - tačno prema tabeli
-        const prihvatljiviNivoi = [1, 2, 3, 4, 5];
-        const neprihvatljiviNivoi = [6, 8, 9, 10, 12, 15, 16, 20, 25];
-        
-        let avgPrihvatljivost: 'PRIHVATLJIV' | 'NEPRIHVATLJIV' = 'PRIHVATLJIV';
-        if (neprihvatljiviNivoi.includes(avgNivoRizika)) {
-            avgPrihvatljivost = 'NEPRIHVATLJIV';
-        } else if (prihvatljiviNivoi.includes(avgNivoRizika)) {
-            avgPrihvatljivost = 'PRIHVATLJIV';
-        }
-
-        totalData = {
-            nivoRizika: avgNivoRizika,
-            kategorija: avgKategorija,
-            prihvatljivost: avgPrihvatljivost
-        };
-    }
+    // Ćelija kolone 7 (šteta) ili 9 (posledice) koja se može ručno izmeniti
+    const izmenljivaCelija = (item: PrilogMData, field: 'posledice' | 'steta') => (
+        <td className="border border-gray-800 px-1 py-2 text-center">
+            {editingCell === `${item.id}-${field}` ? (
+                <input
+                    type="text"
+                    value={editValue}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    onBlur={() => handleInputBlur(item.id, field)}
+                    onKeyDown={(e) => handleKeyPress(e, item.id, field)}
+                    className="w-6 h-6 text-center text-xs border-2 border-blue-500 rounded bg-white text-black font-bold focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    maxLength={1}
+                    autoFocus
+                />
+            ) : (
+                <span
+                    className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${readOnly ? '' : 'cursor-pointer hover:opacity-80'} ${krugBoja(item[field] || 0)}`}
+                    onClick={() => handleCellClick(item.id, field, item[field])}
+                    title={readOnly ? 'Режим прегледа - измене нису дозвољене' : 'Кликните да измените вредност (1-5)'}
+                >
+                    {item[field] || 0}
+                </span>
+            )}
+        </td>
+    );
 
     return (
         <div className="p-6 bg-white border-2 border-gray-800 rounded-lg">
@@ -363,155 +399,42 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
                                 const prevItem = index > 0 ? sortedArray[index - 1] : null;
                                 const prevSection = prevItem ? getSectionInfo(prevItem.id) : null;
 
-                                // Dodaj sekcijski red ako je nova sekcija
+                                // Red grupe rizika sa agregatnim (prosečnim) vrednostima grupe
                                 if (currentSection && (!prevSection || prevSection.number !== currentSection.number)) {
                                     acc.push(
                                         <tr key={`section-${currentSection.number}`} className="bg-gray-300">
                                             <td className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-900 text-xs">
                                                 {currentSection.number}
                                             </td>
-                                            <td className="border border-gray-800 px-2 py-2 font-bold text-gray-900 text-xs text-left" colSpan={12}>
+                                            <td className="border border-gray-800 px-2 py-2 font-bold text-gray-900 text-xs text-left">
                                                 {currentSection.title}
                                             </td>
+                                            {agregatneCelije(agregati.grupe.get(parseInt(currentSection.number)), 'AVG')}
                                         </tr>
                                     );
                                 }
 
-                                // Proverava da li treba dodati podsekcijski red (npr. 1.1, 1.2, itd.)
+                                // Red faktora rizika (npr. 1.1) sa agregatnim vrednostima njegovih stavki
                                 const currentSubsection = item.id.split('.').slice(0, 2).join('.'); // npr. "1.1"
                                 const prevSubsection = prevItem ? prevItem.id.split('.').slice(0, 2).join('.') : null;
 
                                 if (currentSubsection !== prevSubsection && item.id.split('.').length > 2) {
-                                    // Izračunaj prosečne vrednosti za podsekciju
-                                    const subsectionItems = sortedArray.filter(subItem =>
-                                        subItem.id.startsWith(currentSubsection + '.')
-                                    );
-
-                                    const completedSubsectionItems = subsectionItems.filter(subItem =>
-                                        subItem.velicinaOpasnosti && subItem.posledice && subItem.steta
-                                    );
-
-                                    let avgData: {
-                                        velicinaOpasnosti: number;
-                                        izlozenost: number;
-                                        ranjivost: number;
-                                        verovatnoca: number;
-                                        posledice: number;
-                                        steta: number;
-                                        kriticnost: number;
-                                        nivoRizika: number;
-                                        kategorijaRizika: number;
-                                        prihvatljivost: string;
-                                    } | null = null;
-
-                                    if (completedSubsectionItems.length > 0) {
-                                        // Izračunaj dominantnu kategoriju
-                                        const categories = completedSubsectionItems.map(subItem => subItem.kategorijaRizika || 5);
-                                        const categoryCount: { [key: number]: number } = {};
-                                        categories.forEach(cat => {
-                                            categoryCount[cat] = (categoryCount[cat] || 0) + 1;
-                                        });
-                                        const dominantnaKategorija = parseInt(
-                                            Object.keys(categoryCount).reduce((a, b) =>
-                                                categoryCount[parseInt(a)] > categoryCount[parseInt(b)] ? a : b
-                                            )
-                                        );
-
-                                        // Izračunaj prihvatljivost
-                                        const neprihvatljivi = completedSubsectionItems.filter(subItem => subItem.prihvatljivost === 'NEPRIHVATLJIV').length;
-                                        const prihvatljivost = neprihvatljivi === 0 ? 'PRIHVATLJIV' : 'NEPRIHVATLJIV';
-
-                                        avgData = {
-                                            velicinaOpasnosti: Math.round(completedSubsectionItems.reduce((sum, subItem) => sum + (subItem.velicinaOpasnosti || 0), 0) / completedSubsectionItems.length),
-                                            izlozenost: Math.round(completedSubsectionItems.reduce((sum, subItem) => sum + (subItem.izlozenost || 0), 0) / completedSubsectionItems.length),
-                                            ranjivost: Math.round(completedSubsectionItems.reduce((sum, subItem) => sum + (subItem.ranjivost || 0), 0) / completedSubsectionItems.length),
-                                            verovatnoca: Math.round(completedSubsectionItems.reduce((sum, subItem) => sum + (subItem.verovatnoca || 0), 0) / completedSubsectionItems.length),
-                                            posledice: Math.round(completedSubsectionItems.reduce((sum, subItem) => sum + (subItem.posledice || 0), 0) / completedSubsectionItems.length),
-                                            steta: Math.round(completedSubsectionItems.reduce((sum, subItem) => sum + (subItem.steta || 0), 0) / completedSubsectionItems.length),
-                                            kriticnost: Math.round(completedSubsectionItems.reduce((sum, subItem) => sum + (subItem.kriticnost || 0), 0) / completedSubsectionItems.length),
-                                            nivoRizika: Math.round(completedSubsectionItems.reduce((sum, subItem) => sum + (subItem.nivoRizika || 0), 0) / completedSubsectionItems.length),
-                                            kategorijaRizika: dominantnaKategorija,
-                                            prihvatljivost: prihvatljivost
-                                        };
-                                    }
-
-                                    // Pronađi naziv podsekcije iz podataka o grupama
                                     const subsectionTitle = getSubsectionTitle(currentSubsection) || 'Подсекција';
 
                                     acc.push(
-                                        <tr key={`subsection-${currentSubsection}`} className="bg-gray-300">
+                                        <tr key={`subsection-${currentSubsection}`} className="bg-gray-200">
                                             <td className="border border-gray-800 px-1 py-2 text-center font-bold text-gray-800 text-xs">
                                                 {currentSubsection}
                                             </td>
                                             <td className="border border-gray-800 px-2 py-2 font-bold text-gray-800 text-xs">
                                                 {subsectionTitle}
                                             </td>
-                                            {avgData ? (
-                                                <>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${avgData.velicinaOpasnosti >= 4 ? 'bg-red-600' : avgData.velicinaOpasnosti === 3 ? 'bg-yellow-600' : avgData.velicinaOpasnosti === 2 ? 'bg-blue-600' : 'bg-green-600'}`}>
-                                                            {avgData.velicinaOpasnosti}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${avgData.izlozenost >= 4 ? 'bg-red-600' : avgData.izlozenost === 3 ? 'bg-yellow-600' : avgData.izlozenost === 2 ? 'bg-blue-600' : 'bg-green-600'}`}>
-                                                            {avgData.izlozenost}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${avgData.ranjivost >= 4 ? 'bg-red-600' : avgData.ranjivost === 3 ? 'bg-yellow-600' : avgData.ranjivost === 2 ? 'bg-blue-600' : 'bg-green-600'}`}>
-                                                            {avgData.ranjivost}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${avgData.verovatnoca >= 4 ? 'bg-red-600' : avgData.verovatnoca === 3 ? 'bg-yellow-600' : avgData.verovatnoca === 2 ? 'bg-blue-600' : 'bg-green-600'}`}>
-                                                            {avgData.verovatnoca}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${avgData.posledice >= 4 ? 'bg-red-600' : avgData.posledice === 3 ? 'bg-yellow-600' : avgData.posledice === 2 ? 'bg-blue-600' : 'bg-green-600'}`}>
-                                                            {avgData.posledice}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${avgData.steta >= 4 ? 'bg-red-600' : avgData.steta === 3 ? 'bg-yellow-600' : avgData.steta === 2 ? 'bg-blue-600' : 'bg-green-600'}`}>
-                                                            {avgData.steta}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${avgData.kriticnost >= 4 ? 'bg-red-600' : avgData.kriticnost === 3 ? 'bg-yellow-600' : avgData.kriticnost === 2 ? 'bg-blue-600' : 'bg-green-600'}`}>
-                                                            {avgData.kriticnost}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${avgData.nivoRizika >= 20 ? 'bg-red-700' : avgData.nivoRizika >= 15 ? 'bg-red-600' : avgData.nivoRizika >= 10 ? 'bg-orange-600' : avgData.nivoRizika >= 6 ? 'bg-yellow-600' : 'bg-green-600'}`}>
-                                                            {avgData.nivoRizika}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${avgData.kategorijaRizika === 1 ? 'bg-red-700' : avgData.kategorijaRizika === 2 ? 'bg-orange-600' : avgData.kategorijaRizika === 3 ? 'bg-yellow-600' : avgData.kategorijaRizika === 4 ? 'bg-blue-600' : 'bg-green-600'}`}>
-                                                            {avgData.kategorijaRizika}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${avgData.prihvatljivost === 'NEPRIHVATLJIV' ? 'bg-red-600' : 'bg-green-600'}`}>
-                                                            {avgData.prihvatljivost === 'NEPRIHVATLJIV' ? 'NE' : 'DA'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="border border-gray-800 px-1 py-2 text-center">
-                                                        <span className="text-gray-600 text-xs">AVG</span>
-                                                    </td>
-                                                </>
-                                            ) : (
-                                                <td className="border border-gray-800 px-1 py-2 text-center text-gray-500 text-xs" colSpan={11}>
-                                                    Нема података
-                                                </td>
-                                            )}
+                                            {agregatneCelije(agregati.faktori.get(currentSubsection), 'AVG')}
                                         </tr>
                                     );
                                 }
 
-                                // Dodaj red sa podacima
+                                // Red sa podacima: kol. 7 Штете, kol. 8 Критичност, kol. 9 Последице (Izmena 1)
                                 acc.push(
                                     <tr key={item.id} className="hover:bg-gray-50">
                                         <td className="border border-gray-800 px-1 py-2 text-center font-medium text-gray-800 text-xs">
@@ -521,120 +444,20 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
                                         <td className="border border-gray-800 px-2 py-2 text-xs text-gray-800 align-top">
                                             {item.requirement || 'Захтев за процену ризика'}
                                         </td>
+                                        {krug(item.velicinaOpasnosti || 0)}
+                                        {krug(item.izlozenost || 0)}
+                                        {krug(item.ranjivost || 0)}
+                                        {krug(item.verovatnoca || 0)}
+                                        {izmenljivaCelija(item, 'steta')}
+                                        {krug(item.kriticnost || 0)}
+                                        {izmenljivaCelija(item, 'posledice')}
                                         <td className="border border-gray-800 px-1 py-2 text-center">
-                                            <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${(item.velicinaOpasnosti || 0) >= 4 ? 'bg-red-600' :
-                                                (item.velicinaOpasnosti || 0) === 3 ? 'bg-yellow-600' :
-                                                    (item.velicinaOpasnosti || 0) === 2 ? 'bg-blue-600' :
-                                                        'bg-green-600'
-                                                }`}>
-                                                {item.velicinaOpasnosti || 0}
-                                            </span>
-                                        </td>
-                                        <td className="border border-gray-800 px-1 py-2 text-center">
-                                            <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${(item.izlozenost || 0) >= 4 ? 'bg-red-600' :
-                                                (item.izlozenost || 0) === 3 ? 'bg-yellow-600' :
-                                                    (item.izlozenost || 0) === 2 ? 'bg-blue-600' :
-                                                        'bg-green-600'
-                                                }`}>
-                                                {item.izlozenost || 0}
-                                            </span>
-                                        </td>
-                                        <td className="border border-gray-800 px-1 py-2 text-center">
-                                            <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${(item.ranjivost || 0) >= 4 ? 'bg-red-600' :
-                                                (item.ranjivost || 0) === 3 ? 'bg-yellow-600' :
-                                                    (item.ranjivost || 0) === 2 ? 'bg-blue-600' :
-                                                        'bg-green-600'
-                                                }`}>
-                                                {item.ranjivost || 0}
-                                            </span>
-                                        </td>
-                                        <td className="border border-gray-800 px-1 py-2 text-center">
-                                            <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${(item.verovatnoca || 0) >= 4 ? 'bg-red-600' :
-                                                (item.verovatnoca || 0) === 3 ? 'bg-yellow-600' :
-                                                    (item.verovatnoca || 0) === 2 ? 'bg-blue-600' :
-                                                        'bg-green-600'
-                                                }`}>
-                                                {item.verovatnoca || 0}
-                                            </span>
-                                        </td>
-                                        <td className="border border-gray-800 px-1 py-2 text-center">
-                                            {editingCell === `${item.id}-posledice` ? (
-                                                <input
-                                                    type="text"
-                                                    value={editValue}
-                                                    onChange={(e) => handleInputChange(e.target.value)}
-                                                    onBlur={() => handleInputBlur(item.id, 'posledice')}
-                                                    onKeyDown={(e) => handleKeyPress(e, item.id, 'posledice')}
-                                                    className="w-6 h-6 text-center text-xs border-2 border-blue-500 rounded bg-white text-black font-bold focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                                    maxLength={1}
-                                                    autoFocus
-                                                />
-                                            ) : (
-                                                <span
-                                                    className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${readOnly ? '' : 'cursor-pointer hover:opacity-80'} ${(item.posledice || 0) >= 4 ? 'bg-red-600' :
-                                                        (item.posledice || 0) === 3 ? 'bg-yellow-600' :
-                                                            (item.posledice || 0) === 2 ? 'bg-blue-600' :
-                                                                'bg-green-600'
-                                                        }`}
-                                                    onClick={() => handleCellClick(item.id, 'posledice', item.posledice)}
-                                                    title={readOnly ? 'Режим прегледа - измене нису дозвољене' : 'Кликните да измените вредност (1-5)'}
-                                                >
-                                                    {item.posledice || 0}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="border border-gray-800 px-1 py-2 text-center">
-                                            {editingCell === `${item.id}-steta` ? (
-                                                <input
-                                                    type="text"
-                                                    value={editValue}
-                                                    onChange={(e) => handleInputChange(e.target.value)}
-                                                    onBlur={() => handleInputBlur(item.id, 'steta')}
-                                                    onKeyDown={(e) => handleKeyPress(e, item.id, 'steta')}
-                                                    className="w-6 h-6 text-center text-xs border-2 border-blue-500 rounded bg-white text-black font-bold focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                                    maxLength={1}
-                                                    autoFocus
-                                                />
-                                            ) : (
-                                                <span
-                                                    className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${readOnly ? '' : 'cursor-pointer hover:opacity-80'} ${(item.steta || 0) >= 4 ? 'bg-red-600' :
-                                                        (item.steta || 0) === 3 ? 'bg-yellow-600' :
-                                                            (item.steta || 0) === 2 ? 'bg-blue-600' :
-                                                                'bg-green-600'
-                                                        }`}
-                                                    onClick={() => handleCellClick(item.id, 'steta', item.steta)}
-                                                    title={readOnly ? 'Режим прегледа - измене нису дозвољене' : 'Кликните да измените вредност (1-5)'}
-                                                >
-                                                    {item.steta || 0}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="border border-gray-800 px-1 py-2 text-center">
-                                            <span className={`inline-block w-6 h-6 rounded-full text-white font-bold text-xs leading-6 ${(item.kriticnost || 0) >= 4 ? 'bg-red-600' :
-                                                (item.kriticnost || 0) === 3 ? 'bg-yellow-600' :
-                                                    (item.kriticnost || 0) === 2 ? 'bg-blue-600' :
-                                                        'bg-green-600'
-                                                }`}>
-                                                {item.kriticnost || 0}
-                                            </span>
-                                        </td>
-                                        <td className="border border-gray-800 px-1 py-2 text-center">
-                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${(item.nivoRizika || 0) >= 20 ? 'bg-red-700' :
-                                                (item.nivoRizika || 0) >= 15 ? 'bg-red-600' :
-                                                    (item.nivoRizika || 0) >= 10 ? 'bg-orange-600' :
-                                                        (item.nivoRizika || 0) >= 6 ? 'bg-yellow-600' :
-                                                            'bg-green-600'
-                                                }`}>
+                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${nivoBoja(item.nivoRizika || 0)}`}>
                                                 {item.nivoRizika || 0}
                                             </span>
                                         </td>
                                         <td className="border border-gray-800 px-1 py-2 text-center">
-                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${item.kategorijaRizika === 1 ? 'bg-red-700' :
-                                                item.kategorijaRizika === 2 ? 'bg-orange-600' :
-                                                    item.kategorijaRizika === 3 ? 'bg-yellow-600' :
-                                                        item.kategorijaRizika === 4 ? 'bg-blue-600' :
-                                                            'bg-green-600'
-                                                }`}>
+                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${kategorijaBoja(item.kategorijaRizika || 5)}`}>
                                                 {item.kategorijaRizika || 5}
                                             </span>
                                         </td>
@@ -671,34 +494,24 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
                                         НИВО АГРЕГАТНОГ РИЗИКА, КАТЕГОРИЈА И ПРИХВАТЉИВОСТ РИЗИКА
                                     </td>
                                     <td className="border border-gray-800 px-1 py-2 text-center">
-                                        {totalData && (
-                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${totalData.nivoRizika >= 20 ? 'bg-red-700' :
-                                                    totalData.nivoRizika >= 15 ? 'bg-red-600' :
-                                                        totalData.nivoRizika >= 10 ? 'bg-orange-600' :
-                                                            totalData.nivoRizika >= 6 ? 'bg-yellow-600' :
-                                                                'bg-green-600'
-                                                }`}>
-                                                {totalData.nivoRizika}
+                                        {agregati.organizacija && (
+                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${nivoBoja(agregati.organizacija.nivoRizika)}`}>
+                                                {agregati.organizacija.nivoRizika}
                                             </span>
                                         )}
                                     </td>
                                     <td className="border border-gray-800 px-1 py-2 text-center">
-                                        {totalData && (
-                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${totalData.kategorija === 1 ? 'bg-red-700' :
-                                                    totalData.kategorija === 2 ? 'bg-orange-600' :
-                                                        totalData.kategorija === 3 ? 'bg-yellow-600' :
-                                                            totalData.kategorija === 4 ? 'bg-blue-600' :
-                                                                'bg-green-600'
-                                                }`}>
-                                                {totalData.kategorija}
+                                        {agregati.organizacija && (
+                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${kategorijaBoja(agregati.organizacija.kategorijaRizika)}`}>
+                                                {agregati.organizacija.kategorijaRizika}
                                             </span>
                                         )}
                                     </td>
                                     <td className="border border-gray-800 px-1 py-2 text-center">
-                                        {totalData && (
-                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${totalData.prihvatljivost === 'NEPRIHVATLJIV' ? 'bg-red-600' : 'bg-green-600'
+                                        {agregati.organizacija && (
+                                            <span className={`inline-block px-2 py-1 rounded text-white font-bold text-xs ${agregati.organizacija.prihvatljivost === 'NEPRIHVATLJIV' ? 'bg-red-600' : 'bg-green-600'
                                                 }`}>
-                                                {totalData.prihvatljivost === 'NEPRIHVATLJIV' ? 'НЕ' : 'ДА'}
+                                                {agregati.organizacija.prihvatljivost === 'NEPRIHVATLJIV' ? 'НЕ' : 'ДА'}
                                             </span>
                                         )}
                                     </td>

@@ -45,8 +45,9 @@ export async function POST(
             body.zahtev_d
         ].filter(v => v !== null && v !== undefined);
 
+        // Ocena se čuva sa 2 decimale (numeric(10,2)); ista vrednost se prenosi u Prilog Ћ
         const finalScore = scores.length > 0
-            ? scores.reduce((a, b) => a + b, 0) / scores.length
+            ? parseFloat((scores.reduce((a, b) => Number(a) + Number(b), 0) / scores.length).toFixed(2))
             : 0;
 
         const existingResult = await pool.query(

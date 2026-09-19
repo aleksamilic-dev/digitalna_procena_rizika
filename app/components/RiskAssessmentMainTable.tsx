@@ -50,7 +50,7 @@ export default function RiskAssessmentMainTable({
                             Минимална<br />1
                         </th>
                         <th className="border border-gray-800 p-2 text-sm font-bold text-center w-32 text-black">
-                            Није<br />променљиво
+                            Није<br />применљиво
                         </th>
                     </tr>
                 </thead>

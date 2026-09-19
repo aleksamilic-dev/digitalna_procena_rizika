@@ -64,8 +64,8 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
               <div className="mb-4 p-3 bg-white rounded border">
                 <h4 className="font-semibold text-gray-800 mb-2">Kolona 6: Verovatnoća (V)</h4>
                 <div className="text-sm text-gray-800">
-                  <p><strong>Formula:</strong> V = I × R (iz matrice N.5)</p>
-                  <p><strong>Kalkulacija:</strong> Ranjivost {data.ranjivost} × Izloženost {data.izlozenost} = {data.verovatnoca}</p>
+                  <p><strong>Formula:</strong> V = I # R (ulazak u matricu N.5)</p>
+                  <p><strong>Kalkulacija:</strong> Izloženost {data.izlozenost} # Ranjivost {data.ranjivost} → {data.verovatnoca}</p>
                   <p><strong>Matrica:</strong> Prilog N, tabela N.5</p>
                   <div className="mt-2 p-2 bg-blue-50 border-l-4 border-blue-400 text-xs">
                     <p className="mb-1"><strong>НАПОМЕНА 1:</strong> Према упутству В = И (кол. 4) # Р (кол. 5)</p>
@@ -83,6 +83,7 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
                     <p><strong>SŠ (Stvarna šteta):</strong></p>
                     <p className="text-xs text-gray-600">• Iz finansijskih podataka prema Prilogu Nj, tabela Nj.1</p>
                     <p className="text-xs text-gray-600">• Procenat od poslovnih prihoda (AOP 1001)</p>
+                    {data.stepenSS != null && <p className="text-xs text-gray-800">• Stepen SŠ: <strong>{data.stepenSS}</strong></p>}
                   </div>
                   <div className="mt-2 pl-4 border-l-2 border-green-200">
                     <p><strong>VMŠ (Verovatno maksimalna šteta):</strong></p>
@@ -90,10 +91,20 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
                     <p className="text-xs text-gray-600">• Ivo = Иуд × Кво</p>
                     <p className="text-xs text-gray-600">• Индекс утицаја делатности је децимални приказ утицаја делатности (Уд) и служи за прорачун вероватно максималне штете (Прилог Б1, кол. 4)</p>
                     <p className="text-xs text-gray-600">• Кво – koeficijent veličine opasnosti: 10%(Svo=1), 15%(Svo=2), 20%(Svo=3), 25%(Svo=4), 30%(Svo=5)</p>
-                    <p className="text-xs text-gray-600">• Stepen Svo se preuzima iz Priloga Lj, kol. 3</p>
+                    <p className="text-xs text-gray-600">• Stepen Svo grupe rizika se preuzima iz Priloga Lj, kol. 3 (Prilog B1, kol. 3)</p>
                     <p className="text-xs text-gray-600">• Prema Prilogu Nj, tabela Nj.1a</p>
+                    {data.stepenVMSH != null && (
+                      <p className="text-xs text-gray-800">
+                        • Stepen VMŠ: <strong>{data.stepenVMSH}</strong>
+                        {data.vmshIznos != null && <> (VMŠ = {data.vmshIznos.toLocaleString('sr-RS')} RSD)</>}
+                      </p>
+                    )}
                   </div>
-                  <p className="mt-2"><strong>Finalni rezultat:</strong> <span className="bg-yellow-100 px-2 py-1 rounded">{data.steta}</span></p>
+                  <p className="mt-2"><strong>Finalni rezultat:</strong> <span className="bg-yellow-100 px-2 py-1 rounded">{data.steta}</span>
+                    {data.stepenSS != null && data.stepenVMSH != null && (
+                      <span className="text-xs text-gray-600"> = ({data.stepenSS} + {data.stepenVMSH})/2, zaokruženo{data.steta !== Math.round((data.stepenSS + data.stepenVMSH) / 2) ? ' (ručno izmenjeno)' : ''}</span>
+                    )}
+                  </p>
                 </div>
               </div>
 
@@ -111,8 +122,8 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
               <div className="mb-4 p-3 bg-white rounded border">
                 <h4 className="font-semibold text-gray-800 mb-2">Kolona 9: Posledice (P)</h4>
                 <div className="text-sm text-gray-800">
-                  <p><strong>Formula:</strong> P = Š × K (iz matrice Nj.3)</p>
-                  <p><strong>Kalkulacija:</strong> Šteta {data.steta} × Kritičnost {data.kriticnost} = {data.posledice}</p>
+                  <p><strong>Formula:</strong> P = Š # K (ulazak u matricu Nj.3)</p>
+                  <p><strong>Kalkulacija:</strong> Šteta {data.steta} # Kritičnost {data.kriticnost} → {data.posledice}</p>
                   <p><strong>Matrica:</strong> Prilog Nj, tabela Nj.3</p>
                 </div>
               </div>

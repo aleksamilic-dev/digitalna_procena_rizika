@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { RiskGroupData } from "../../data/riskGroups";
-import { PrilogMData, calculatePrilogM } from "../../data/riskDataLoader";
+import {
+    PrilogMData,
+    getSvoPoGrupama,
+    izracunajVerovatnocu,
+    recalculatePrilogM,
+    resolveFinansijskiPodaci
+} from "../../data/riskDataLoader";
 
 interface RiskSelection {
     risk_id: string;
@@ -25,7 +31,6 @@ interface UseRiskAssessmentActionsProps {
     prilogMData: Map<string, PrilogMData>;
     setPrilogMData: (data: Map<string, PrilogMData>) => void;
     onSelectionChange?: (selections: RiskSelection[]) => void;
-    onPrilogMUpdate?: (prilogMData: PrilogMData[]) => void;
     setHasUnsavedChanges: (hasUnsaved: boolean) => void;
     currentFinancialData: FinancialData | null; // Dodaj finansijske podatke
     hasValidFinancialData: boolean; // Dodaj flag za validnost
@@ -39,7 +44,6 @@ export function useRiskAssessmentActions({
     prilogMData,
     setPrilogMData,
     onSelectionChange,
-    onPrilogMUpdate,
     setHasUnsavedChanges,
     currentFinancialData,
     hasValidFinancialData
@@ -51,6 +55,14 @@ export function useRiskAssessmentActions({
         dangerLevel: number;
         description: string;
     } | null>(null);
+
+    const recalculateAll = (items: PrilogMData[]) => {
+        const { finansijskiPodaci, usingDefaultFinancialData } =
+            resolveFinansijskiPodaci(currentFinancialData, hasValidFinancialData);
+        return recalculatePrilogM(items, finansijskiPodaci, usingDefaultFinancialData);
+    };
+
+    const toPrilogMMap = (items: PrilogMData[]) => new Map(items.map(item => [item.id, item]));
 
     const handleCellClick = async (riskId: string, dangerLevel: number, description: string) => {
         if (loading) {
@@ -75,17 +87,13 @@ export function useRiskAssessmentActions({
             newSelections.set(riskId, newSelection);
             setSelections(newSelections);
 
-            // Remove from Prilog M data since it's not applicable
-            const newPrilogMData = new Map(prilogMData);
-            newPrilogMData.delete(riskId);
-            setPrilogMData(newPrilogMData);
+            // Remove from Prilog M data since it's not applicable; Svo grupe (Prilog B1) se menja,
+            // pa se preračunavaju sve stavke
+            const remaining = Array.from(prilogMData.values()).filter(item => item.id !== riskId);
+            setPrilogMData(toPrilogMMap(recalculateAll(remaining)));
 
             if (onSelectionChange) {
                 onSelectionChange(Array.from(newSelections.values()));
-            }
-
-            if (onPrilogMUpdate) {
-                onPrilogMUpdate(Array.from(newPrilogMData.values()));
             }
 
             setHasUnsavedChanges(true);
@@ -115,65 +123,28 @@ export function useRiskAssessmentActions({
         newSelections.set(riskId, newSelection);
         setSelections(newSelections);
 
-        // Use passed financial data instead of making API call
-        let financialData: FinancialData;
-        let usingDefaultValues = false;
-
-        if (!hasValidFinancialData || !currentFinancialData) {
-            usingDefaultValues = true;
-            financialData = {
-                poslovniPrihodi: 1000000,
-                vrednostImovine: 5000000,
-                delatnost: currentFinancialData?.delatnost || 'default',
-                stvarnaSteta: currentFinancialData?.stvarnaSteta ?? 0
-            };
-        } else {
-            financialData = currentFinancialData;
-        }
-
-        // Calculate Prilog M data according to SRPS A.L2.003:2025
-        const calculatedData = calculatePrilogM(
-            dangerLevel,
-            params.stepenIzlozenosti,
-            params.stepenRanjivosti,
-            financialData.stvarnaSteta,
-            financialData.poslovniPrihodi,
-            financialData.vrednostImovine,
-            financialData.delatnost,
-            params.kriticnost,
-            true
-        );
-
-        calculatedData.usingDefaultFinancialData = usingDefaultValues;
-
-        console.log('🔍 Calculation completed for:', riskId, 'with result:', calculatedData);
-
+        // Kolone 4-6 i 8 iz unetih parametara; kolone 7 i 9-12 zavise od Priloga B1 (Svo svih grupa)
+        // i finansijskih podataka, pa se posle dodavanja stavke preračunavaju sve stavke
         const prilogMItem: PrilogMData = {
             id: riskId,
             groupId: riskGroupData.id,
             requirement: description,
-            velicinaOpasnosti: calculatedData.velicinaOpasnosti ?? dangerLevel,
-            izlozenost: calculatedData.izlozenost ?? 3,
-            ranjivost: calculatedData.ranjivost ?? 3,
-            verovatnoca: calculatedData.verovatnoca ?? 3,
-            posledice: calculatedData.posledice ?? 3,
-            steta: calculatedData.steta ?? 3,
-            kriticnost: calculatedData.kriticnost ?? 3,
-            nivoRizika: calculatedData.nivoRizika ?? 4,
-            kategorijaRizika: calculatedData.kategorijaRizika ?? 3,
-            prihvatljivost: calculatedData.prihvatljivost ?? 'PRIHVATLJIV'
+            velicinaOpasnosti: dangerLevel,
+            ...izracunajVerovatnocu(dangerLevel, params.stepenIzlozenosti, params.stepenRanjivosti),
+            kriticnost: params.kriticnost,
+            steta: null,
+            posledice: null,
+            nivoRizika: null,
+            kategorijaRizika: null,
+            prihvatljivost: null,
+            opisIdentifikovanihRizika: prilogMData.get(riskId)?.opisIdentifikovanihRizika ?? null
         };
 
-        const newPrilogMData = new Map(prilogMData);
-        newPrilogMData.set(riskId, prilogMItem);
-        setPrilogMData(newPrilogMData);
+        const others = Array.from(prilogMData.values()).filter(item => item.id !== riskId);
+        setPrilogMData(toPrilogMMap(recalculateAll([...others, prilogMItem])));
 
         if (onSelectionChange) {
             onSelectionChange(Array.from(newSelections.values()));
-        }
-
-        if (onPrilogMUpdate) {
-            onPrilogMUpdate(Array.from(newPrilogMData.values()));
         }
 
         setHasUnsavedChanges(true);
@@ -186,7 +157,7 @@ export function useRiskAssessmentActions({
             const selectionsToSave = Array.from(selections.values());
             const prilogMToSave = Array.from(prilogMData.values());
 
-            const [selectionResults, prilogMResults] = await Promise.allSettled([
+            const [selectionResults, prilogMResults, prilogB1Result] = await Promise.allSettled([
                 Promise.all(selectionsToSave.map(selection =>
                     fetch(`/api/procena/${procenaId}/risk-selection`, {
                         method: 'POST',
@@ -204,18 +175,29 @@ export function useRiskAssessmentActions({
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(item)
                     })
-                ))
+                )),
+                // Prilog B1 se čuva zajedno sa Prilogom M jer Svo po grupama potiče iz njega
+                fetch(`/api/procena/${procenaId}/prilog-b1`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ svoPoGrupama: Object.fromEntries(getSvoPoGrupama(prilogMToSave)) })
+                })
             ]);
 
             let hasErrors = false;
 
-            if (selectionResults.status === 'rejected') {
-                console.error('Error saving selections:', selectionResults.reason);
+            if (selectionResults.status === 'rejected' || selectionResults.value.some(response => !response.ok)) {
+                console.error('Error saving selections:', selectionResults);
                 hasErrors = true;
             }
 
-            if (prilogMResults.status === 'rejected') {
-                console.error('Error saving Prilog M data:', prilogMResults.reason);
+            if (prilogMResults.status === 'rejected' || prilogMResults.value.some(response => !response.ok)) {
+                console.error('Error saving Prilog M data:', prilogMResults);
+                hasErrors = true;
+            }
+
+            if (prilogB1Result.status === 'rejected' || !prilogB1Result.value.ok) {
+                console.error('Error saving Prilog B1 data:', prilogB1Result);
                 hasErrors = true;
             }
 

@@ -15,7 +15,8 @@ export async function POST(
         const procenaId = parseInt(id);
         const { risk_id, danger_level, description } = await req.json();
 
-        if (!procenaId || !risk_id || !danger_level) {
+        // danger_level 0 = "Није применљиво" (N/A) je validna vrednost
+        if (!procenaId || !risk_id || danger_level === undefined || danger_level === null) {
             return NextResponse.json({ error: "Nedostaju potrebni podaci" }, { status: 400 });
         }
 
@@ -47,6 +48,14 @@ export async function POST(
                     INSERT INTO RiskSelection (procenaId, riskId, dangerLevel, description, createdAt, updatedAt)
                     VALUES ($1, $2, $3, $4, NOW(), NOW())
                 `, [procenaId, risk_id, danger_level, description || '']);
+            }
+
+            // Stavka označena kao N/A ne ulazi u Prilog M (ni u Svo za Prilog B1)
+            if (danger_level === 0) {
+                await pool.query(
+                    'DELETE FROM "PrilogM" WHERE "procenaId" = $1 AND "itemId" = $2',
+                    [procenaId, risk_id]
+                );
             }
         });
 
@@ -83,7 +92,7 @@ export async function GET(
         // Mapiranje naziva kolona (Azure SQL može vraćati lowercase)
         const mappedRows = result.rows.map(row => ({
             riskId: row.riskid || row.riskId,
-            dangerLevel: row.dangerlevel || row.dangerLevel,
+            dangerLevel: row.dangerlevel ?? row.dangerLevel,
             description: row.description || ''
         }));
 

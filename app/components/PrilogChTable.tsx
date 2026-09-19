@@ -95,6 +95,18 @@ export default function PrilogChTable({ procenaId, readOnly = false, resourceSco
         }
     };
 
+    // Zahtev в) se automatski prenosi iz Priloga U, tabela U.1 (Prilog Ћ, tabela Ћ.2)
+    const hasPrilogUScore = prilogUScoreOverride !== undefined && prilogUScoreOverride !== null;
+    const getFulfillment = (key: keyof TableChData): number | null =>
+        key === 'zahtev_v' ? (hasPrilogUScore ? prilogUScoreOverride : null) : data[key];
+
+    // Kol. 4 = kol. 2 × kol. 3; ocena opštih zahteva = prosek kol. 4 (nepopunjeno = 0)
+    const hasAnyFulfillment = REQUIREMENTS.some(req => getFulfillment(req.key as keyof TableChData) !== null);
+    const finalScore = hasAnyFulfillment
+        ? parseFloat((REQUIREMENTS.reduce((sum, req) =>
+            sum + (getFulfillment(req.key as keyof TableChData) || 0) * resourceScore, 0) / REQUIREMENTS.length).toFixed(2))
+        : null;
+
     const getQualityLevel = (score: number | null) => {
         if (score === null) return '-';
         if (score > 18.49) return '5 – одличан квалитет';
@@ -132,16 +144,22 @@ export default function PrilogChTable({ procenaId, readOnly = false, resourceSco
                             <tr key={req.key} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                                 <td className="border p-2">{req.label}</td>
                                 <td className="border p-2 text-center">
-                                    {req.key === 'zahtev_v' && prilogUScoreOverride !== undefined && prilogUScoreOverride !== null ? (
-                                        <div className="font-bold text-purple-800 bg-purple-100 p-1 rounded">
-                                            {prilogUScoreOverride.toFixed(2)}
-                                        </div>
+                                    {req.key === 'zahtev_v' ? (
+                                        hasPrilogUScore ? (
+                                            <div className="font-bold text-purple-800 bg-purple-100 p-1 rounded">
+                                                {prilogUScoreOverride.toFixed(2)}
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs text-gray-500" title="Оцена се аутоматски преноси из Прилога У, табела У.1">
+                                                Попуните Прилог У
+                                            </div>
+                                        )
                                     ) : (
                                         <select
                                             className="w-full p-1 border rounded text-center"
                                             value={data[req.key as keyof TableChData] ?? ''}
                                             onChange={(e) => handleScoreChange(req.key as keyof TableChData, parseFloat(e.target.value))}
-                                            disabled={readOnly || (req.key === 'zahtev_v' && prilogUScoreOverride !== null)}
+                                            disabled={readOnly}
                                         >
                                             <option value="" disabled>-</option>
                                             {req.type === 'strict' ? (
@@ -165,8 +183,8 @@ export default function PrilogChTable({ procenaId, readOnly = false, resourceSco
                                     {resourceScore.toFixed(2)}
                                 </td>
                                 <td className="border p-2 text-center font-bold">
-                                    {data[req.key as keyof TableChData] !== null
-                                        ? ((data[req.key as keyof TableChData] || 0) * resourceScore).toFixed(2)
+                                    {getFulfillment(req.key as keyof TableChData) !== null
+                                        ? ((getFulfillment(req.key as keyof TableChData) || 0) * resourceScore).toFixed(2)
                                         : '-'}
                                 </td>
                             </tr>
@@ -177,7 +195,7 @@ export default function PrilogChTable({ procenaId, readOnly = false, resourceSco
                                 Оцена општих захтева за организацију (Просек):
                             </td>
                             <td className="border p-3 text-center text-lg text-green-900">
-                                {data.final_score != null ? data.final_score.toFixed(2) : '-'}
+                                {finalScore !== null ? finalScore.toFixed(2) : '-'}
                             </td>
                         </tr>
                         <tr className="bg-green-100 font-bold">
@@ -185,7 +203,7 @@ export default function PrilogChTable({ procenaId, readOnly = false, resourceSco
                                 Ниво квалитета (према Табели Т.3):
                             </td>
                             <td className="border p-3 text-center text-green-900">
-                                {getQualityLevel(data.final_score)}
+                                {getQualityLevel(finalScore)}
                             </td>
                         </tr>
                     </tbody>

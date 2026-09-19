@@ -79,10 +79,12 @@ export async function GET(
 
     const pool = await getDbConnection();
 
+    // Nazivi kolona pod navodnicima: bez njih PostgreSQL vraća ključeve malim slovima
+    // (poslovniprihodi...), pa su se sačuvani podaci čitali kao 0
     const result = await pool.query(`
-      SELECT poslovniPrihodi, vrednostImovine, delatnost, stvarnaSteta
-      FROM FinancialData 
-      WHERE procenaId = $1
+      SELECT "poslovniPrihodi", "vrednostImovine", delatnost, "stvarnaSteta"
+      FROM "FinancialData"
+      WHERE "procenaId" = $1
     `, [procenaId]);
 
     if (result.rows.length === 0) {
@@ -104,10 +106,10 @@ export async function GET(
     };
     
     return NextResponse.json({
-      poslovniPrihodi: typeof data.poslovniPrihodi === 'number' ? data.poslovniPrihodi : parseInt(String(data.poslovniPrihodi || '0')),
-      vrednostImovine: typeof data.vrednostImovine === 'number' ? data.vrednostImovine : parseInt(String(data.vrednostImovine || '0')),
+      poslovniPrihodi: Number(data.poslovniPrihodi) || 0,
+      vrednostImovine: Number(data.vrednostImovine) || 0,
       delatnost: data.delatnost || 'default',
-      stvarnaSteta: typeof data.stvarnaSteta === 'number' ? data.stvarnaSteta : parseInt(String(data.stvarnaSteta || '0'))
+      stvarnaSteta: Number(data.stvarnaSteta) || 0
     });
 
   } catch (error) {

@@ -53,3 +53,4 @@ web.config
 
 # licencirani SRPS dokumenti - zabranjeno umnozavanje i koriscenje na mrezi
 /documentation
+/SRPS*.pdf

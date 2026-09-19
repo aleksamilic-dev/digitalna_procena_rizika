@@ -182,7 +182,6 @@ export default function RiskAssessmentContent({
                                         <ul className="list-disc list-inside mt-1">
                                             <li>Пословни приходи: 1.000.000 РСД</li>
                                             <li>Вредност имовине: 5.000.000 РСД</li>
-                                            <li>Делатност: default (Iud = 0.15)</li>
                                         </ul>
                                         <p className="mt-2">
                                             <strong>Препорука:</strong> Унесите стварне финансијске податке за тачну процену ризика према стандарду SRPS A.L2.003:2025.
@@ -270,10 +269,7 @@ export default function RiskAssessmentContent({
                     />
 
                     {/* Prilog B1 table - Uticaj delatnosti */}
-                    <PrilogB1Table
-                        procenaId={procenaId}
-                        readOnly={readOnly}
-                    />
+                    <PrilogB1Table prilogMData={prilogMData} />
 
                     {/* Prilog T table - Ocena resursa */}
                     <PrilogTTable

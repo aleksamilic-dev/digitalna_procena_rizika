@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-import { PrilogMData, calculateStvarnaSteta, calculateVerovatnoMaksimalnaSteta } from '../../../../data/riskDataLoader';
+import { PrilogMData, normalizePrilogMRow, primeniRucnuIzmenu } from '../../../../data/riskDataLoader';
 import { getDbConnection } from '../../../../../lib/db';
 import { executeWithRetry } from '../../../../../lib/db-retry';
 import { ProcenaRouteContext } from '../../../types';
@@ -33,12 +33,12 @@ export async function POST(
       );
     }
 
+    // SŠ i VMŠ izračunava klijent iz stvarnih finansijskih podataka i Priloga B1
+    const brojIliNull = (vrednost: unknown) =>
+      typeof vrednost === 'number' && Number.isFinite(vrednost) ? vrednost : null;
+
     await executeWithRetry(async () => {
       const pool = await getDbConnection();
-
-      // Izračunaj dodatne vrednosti prema standardu
-      const stepenSS = calculateStvarnaSteta(0, 1000000);
-      const { vmsh, stepenVMSH } = calculateVerovatnoMaksimalnaSteta(5000000, prilogMItem.velicinaOpasnosti || 3, 'default');
 
       await pool.query(`
         INSERT INTO "PrilogM" (
@@ -72,9 +72,9 @@ export async function POST(
         prilogMItem.nivoRizika,
         prilogMItem.kategorijaRizika,
         prilogMItem.prihvatljivost,
-        stepenSS,
-        stepenVMSH,
-        vmsh,
+        brojIliNull(prilogMItem.stepenSS),
+        brojIliNull(prilogMItem.stepenVMSH),
+        brojIliNull(prilogMItem.vmshIznos),
         prilogMItem.opisIdentifikovanihRizika || null
       ]);
     });
@@ -193,12 +193,12 @@ export async function PATCH(
       }
     }
 
-    await executeWithRetry(async () => {
+    const updated = await executeWithRetry(async () => {
       const pool = await getDbConnection();
 
       // Proveri da li stavka postoji
       const existingRecord = await pool.query(
-        'SELECT * FROM PrilogM WHERE procenaId = $1 AND itemId = $2',
+        'SELECT * FROM "PrilogM" WHERE "procenaId" = $1 AND "itemId" = $2',
         [procenaId, itemId]
       );
 
@@ -207,31 +207,53 @@ export async function PATCH(
         // Umesto da bacamo grešku, jednostavno ne radimo ništa za opisIdentifikovanihRizika
         if (updateFields.includes('opisIdentifikovanihRizika')) {
           console.log(`⚠️ Pokušaj ažuriranja opisa za nepostojećу stavku ${itemId} - preskačemo`);
-          return; // Izađi iz funkcije bez greške
+          return null; // Izađi iz funkcije bez greške
         } else {
           throw new Error('Stavka ne postoji');
         }
-      } else {
-        // Ako stavka postoji, ažuriraj je
-        const setClause = updateFields.map((field, index) => `${field} = $${index + 3}`).join(', ');
-        const values = [procenaId, itemId, ...updateFields.map(field => updateData[field])];
-
-        const query = `
-          UPDATE PrilogM 
-          SET ${setClause}, updatedAt = NOW()
-          WHERE procenaId = $1 AND itemId = $2
-        `;
-
-        await pool.query(query, values);
       }
+
+      const columns: Record<string, unknown> = {};
+      if (updateFields.includes('opisIdentifikovanihRizika')) {
+        columns.opisIdentifikovanihRizika = updateData.opisIdentifikovanihRizika;
+      }
+
+      // Ručna izmena štete (kol. 7) ili posledica (kol. 9): preračunaj posledice,
+      // nivo rizika, kategoriju i prihvatljivost da tabela ostane u skladu sa O.2, P.1 i P.2
+      let item = normalizePrilogMRow(existingRecord.rows[0]);
+      for (const field of ['steta', 'posledice'] as const) {
+        if (updateFields.includes(field)) {
+          item = { ...item, ...primeniRucnuIzmenu(item, field, updateData[field]) };
+        }
+      }
+      if (updateFields.includes('steta') || updateFields.includes('posledice')) {
+        Object.assign(columns, {
+          steta: item.steta,
+          posledice: item.posledice,
+          nivoRizika: item.nivoRizika,
+          kategorijaRizika: item.kategorijaRizika,
+          prihvatljivost: item.prihvatljivost
+        });
+      }
+
+      const names = Object.keys(columns);
+      const setClause = names.map((name, index) => `"${name}" = $${index + 3}`).join(', ');
+      await pool.query(`
+        UPDATE "PrilogM"
+        SET ${setClause}, "updatedAt" = NOW()
+        WHERE "procenaId" = $1 AND "itemId" = $2
+      `, [procenaId, itemId, ...names.map(name => columns[name])]);
+
+      return columns;
     });
 
-    console.log(`✅ Ažurirano polje/polja za stavku ${itemId}:`, updateData);
+    console.log(`✅ Ažurirano polje/polja za stavku ${itemId}:`, updated);
 
     return NextResponse.json({
       success: true,
       message: 'Stavka uspešno ažurirana',
-      updatedFields: updateFields
+      updatedFields: updateFields,
+      item: updated
     });
 
   } catch (error: unknown) {

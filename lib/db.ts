@@ -12,7 +12,11 @@ dotenv.config({ path: '.env.local', quiet: true });
 dotenv.config({ path: '.env.production', quiet: true });
 dotenv.config({ quiet: true });
 
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
+
+// NUMERIC/DECIMAL kolone (OID 1700) pg podrazumevano vraća kao string ("3.00"),
+// zbog čega su se zbirovi u prilozima B1, T, U i Ћ spajali kao tekst.
+types.setTypeParser(1700, (value: string) => parseFloat(value));
 
 // Global pool caching for Next.js (prevents new pool on every hot-reload)
 type GlobalPg = {

@@ -19,9 +19,10 @@ interface TableUData {
 const REQ_CONFIG = [
     { key: 'zahtev_a', label: 'а) испуњава сву релевантну правну регулативу применљиву на услуге процене ризика у заштити лица, имовине и пословања;', type: 'strict' },
     { key: 'zahtev_b', label: 'б) има безбедносни сертификат одговарајућег степена, у складу са прописима о заштити тајности података, када његова организација услуге пружа објектима критичне инфраструктуре.', type: 'strict' },
-    { key: 'zahtev_v', label: 'в) има високо образовање на основним академским студијама у обиму од најмање 240 ЕСПБ бодова...', type: 'range' },
+    // Tabela U.2: preporuke в) i д) se ocenjuju sa 1 ili 5, a г) od 1 do 5
+    { key: 'zahtev_v', label: 'в) има високо образовање на основним академским студијама у обиму од најмање 240 ЕСПБ бодова...', type: 'oneOrFive' },
     { key: 'zahtev_g', label: 'г) познаје најмање један страни језик нивоа А1;', type: 'range' },
-    { key: 'zahtev_d', label: 'д) има последипломско специјалистичко усавршавање из области безбедности...', type: 'range' }
+    { key: 'zahtev_d', label: 'д) има последипломско специјалистичко усавршавање из области безбедности...', type: 'oneOrFive' }
 ];
 
 
@@ -157,11 +158,9 @@ export default function PrilogUTable({ procenaId, readOnly = false, onScoreUpdat
                                         disabled={readOnly}
                                     >
                                         <option value="" disabled>-</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
+                                        {(req.type === 'oneOrFive' ? [1, 5] : [1, 2, 3, 4, 5]).map(v => (
+                                            <option key={v} value={v}>{v}</option>
+                                        ))}
                                     </select>
                                 </td>
                                 <td className="border p-2 text-center font-bold">

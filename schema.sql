@@ -370,8 +370,10 @@ CREATE TABLE IF NOT EXISTS prilog_u (
 );
 CREATE TABLE IF NOT EXISTS prilog_s (
     id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
-    group_id VARCHAR(50), item_id VARCHAR(50) NOT NULL, vrednost DECIMAL(10,2), created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id, group_id, item_id)
+    group_id VARCHAR(50), item_id VARCHAR(50) NOT NULL, vrednost TEXT, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(procena_id, group_id, item_id)
 );
+-- Prilog S (Образац SRPS А.L2.003/3) sadrži tekst: datum, naziv objekta, linkove, opise mera
+ALTER TABLE prilog_s ALTER COLUMN vrednost TYPE TEXT USING vrednost::text;
 CREATE TABLE IF NOT EXISTS tabela_f5 (
     id SERIAL PRIMARY KEY, procena_id INT NOT NULL REFERENCES "ProcenaRizika"(id) ON DELETE CASCADE,
     group_id VARCHAR(50), item_id VARCHAR(50), mera TEXT, opis_i_obrazlozenje TEXT, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW()
