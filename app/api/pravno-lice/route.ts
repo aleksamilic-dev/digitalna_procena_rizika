@@ -135,12 +135,20 @@ export async function GET(req: Request) {
         const countResult = await pool.query<{ total: number }>('SELECT COUNT(*) as total FROM "PravnoLice"');
         const total = countResult.rows[0]?.total || 0;
 
+        // ?id= vraća samo jedno pravno lice (stranica sa detaljima)
+        const singleId = url.searchParams.get('id');
+        if (singleId !== null && !/^\d+$/.test(singleId)) {
+            return NextResponse.json({ error: "Neispravan ID pravnog lica" }, { status: 400 });
+        }
+
         // First select paginated IDs of PravnoLice to prevent LEFT JOIN duplication in OFFSET/FETCH NEXT
-        const idsResult = await pool.query<{ id: number }>(`
-            SELECT id FROM "PravnoLice"
-            ORDER BY id DESC
-            LIMIT $1 OFFSET $2
-        `, [limit, offset]);
+        const idsResult = singleId !== null
+            ? await pool.query<{ id: number }>('SELECT id FROM "PravnoLice" WHERE id = $1', [Number(singleId)])
+            : await pool.query<{ id: number }>(`
+                SELECT id FROM "PravnoLice"
+                ORDER BY id DESC
+                LIMIT $1 OFFSET $2
+            `, [limit, offset]);
 
         if (idsResult.rows.length === 0) {
             return NextResponse.json({
@@ -276,8 +284,8 @@ export async function PUT(req: Request) {
 
             const insertResult = await pool.query<{ id: number }>(`
                 INSERT INTO Usluge (pravnoLiceId, naziv_usluge, datum_izrade, opis)
-                RETURNING id
                 VALUES ($1, $2, $3, $4)
+                RETURNING id
             `, [pravnoLiceId, naziv_usluge, datum_izrade || new Date().toISOString().split('T')[0], opis || null]);
 
             const uslugaId = insertResult.rows[0]?.id;

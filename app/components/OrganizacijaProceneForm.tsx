@@ -24,6 +24,22 @@ interface OrganizacijaProceneFormProps {
     onSave?: () => void;
 }
 
+// Baza vraća null za prazna polja, a kontrolisana polja u React-u moraju da dobiju string
+const tekst = (vrednost: unknown): string => (vrednost == null ? '' : String(vrednost));
+
+function normalizujOrganizaciju(podaci: Record<string, unknown> | null | undefined): OrganizacijaData {
+    return {
+        id: typeof podaci?.id === 'number' ? podaci.id : undefined,
+        poslovno_ime: tekst(podaci?.poslovno_ime),
+        adresa_sediste: tekst(podaci?.adresa_sediste),
+        maticni_broj: tekst(podaci?.maticni_broj),
+        pib: tekst(podaci?.pib),
+        broj_licence: tekst(podaci?.broj_licence),
+        menadzer_ime: tekst(podaci?.menadzer_ime),
+        menadzer_licence: tekst(podaci?.menadzer_licence)
+    };
+}
+
 export default function OrganizacijaProceneForm({ pravnoLiceId, onSave }: OrganizacijaProceneFormProps) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -44,8 +60,12 @@ export default function OrganizacijaProceneForm({ pravnoLiceId, onSave }: Organi
             const response = await fetch(`/api/pravno-lice/${pravnoLiceId}/organizacija-procene`);
             if (response.ok) {
                 const data = await response.json();
-                setOrganizacija(data.organizacija);
-                setClanoviTima(data.clanoviTima || []);
+                setOrganizacija(normalizujOrganizaciju(data.organizacija));
+                setClanoviTima((data.clanoviTima || []).map((clan: Record<string, unknown>) => ({
+                    id: typeof clan.id === 'number' ? clan.id : undefined,
+                    ime: tekst(clan.ime),
+                    broj_licence: tekst(clan.broj_licence)
+                })));
             }
         } catch (error) {
             console.error('Greška pri učitavanju podataka:', error);
@@ -102,8 +122,8 @@ export default function OrganizacijaProceneForm({ pravnoLiceId, onSave }: Organi
 
     return (
         <div className="space-y-6">
-            <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-xl font-bold mb-4 text-gray-900">1.3. ПОДАЦИ О ОРГАНИЗАЦИЈИ КОЈА ВРШИ ПРОЦЕНУ РИЗИКА</h2>
+            <div>
+                <h2 className="mb-4 text-base font-semibold text-slate-900">1.3. ПОДАЦИ О ОРГАНИЗАЦИЈИ КОЈА ВРШИ ПРОЦЕНУ РИЗИКА</h2>
 
                 {/* Napomena o razlici */}
                 <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-2">
@@ -246,7 +266,7 @@ export default function OrganizacijaProceneForm({ pravnoLiceId, onSave }: Organi
                                         <td className="border border-gray-300 p-2 w-24">
                                             <button
                                                 onClick={() => ukloniClana(index)}
-                                                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                                                className="rounded-lg border border-red-200 bg-white px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50"
                                             >
                                                 Уклони
                                             </button>
@@ -282,7 +302,7 @@ export default function OrganizacijaProceneForm({ pravnoLiceId, onSave }: Organi
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {saving ? 'Чување...' : 'Сачувај податке'}
                     </button>
