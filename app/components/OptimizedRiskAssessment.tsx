@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ChevronLeft, ChevronRight, CircleCheck, Download, Eye, Pencil, Wallet } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CircleCheck, Download, Eye, FileText, Pencil, Wallet } from 'lucide-react';
 import { RISK_GROUPS } from '../data/riskGroups';
 import { getRiskGroupData, normalizePrilogMRow, type PrilogMData } from '../data/riskDataLoader';
 import RiskAssessmentTable from './RiskAssessmentTable';
@@ -423,9 +423,13 @@ export default function OptimizedRiskAssessment({ procenaId, procena, readOnly =
                                     Финансијски подаци
                                 </button>
                             )}
+                            <Link href={`/optimized-risk/${procenaId}/akt`} className={btn.secondary}>
+                                <FileText className="h-4 w-4" />
+                                Акт (штампа / PDF)
+                            </Link>
                             <button onClick={exportData} className={btn.secondary} title="Преузми све податке процене као JSON датотеку">
                                 <Download className="h-4 w-4" />
-                                Извези
+                                Извези податке
                             </button>
                         </div>
                     </div>
