@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { btn } from "../ui";
 import { Plus, Trash2, Info } from "lucide-react";
 import CriteriaModal from "./CriteriaModal";
 
@@ -33,24 +34,32 @@ export default function TabelaF5({ procenaId, readOnly = false }: TabelaF5Props)
     const [items, setItems] = useState<F5Item[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCriteria, setShowCriteria] = useState(false);
+    const [greskaUcitavanja, setGreskaUcitavanja] = useState(false);
+    const [greskaCuvanja, setGreskaCuvanja] = useState(false);
+
+    const ucitajMere = useCallback(async () => {
+        setLoading(true);
+        setGreskaUcitavanja(false);
+        try {
+            const res = await fetch(`/api/procena/${procenaId}/prilog-f5`);
+            if (!res.ok) {
+                throw new Error(`Status ${res.status}`);
+            }
+            const data = await res.json();
+            // group_id je VARCHAR kolona - bez Number() se sačuvane mere ne prikazuju posle osvežavanja
+            setItems(data.map((item: F5Item) => ({ ...item, group_id: Number(item.group_id) })));
+        } catch (err) {
+            // Prazna tabela bi izgledala kao da mere nisu unete, pa se greška mora videti
+            console.error("Error fetching F5 items", err);
+            setGreskaUcitavanja(true);
+        } finally {
+            setLoading(false);
+        }
+    }, [procenaId]);
 
     useEffect(() => {
-        const fetchItems = async () => {
-            try {
-                const res = await fetch(`/api/procena/${procenaId}/prilog-f5`);
-                if (res.ok) {
-                    const data = await res.json();
-                    // group_id je VARCHAR kolona - bez Number() se sačuvane mere ne prikazuju posle osvežavanja
-                    setItems(data.map((item: F5Item) => ({ ...item, group_id: Number(item.group_id) })));
-                }
-            } catch (err) {
-                console.error("Error fetching F5 items", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchItems();
-    }, [procenaId]);
+        ucitajMere();
+    }, [ucitajMere]);
 
     const handleUpdate = async (item: F5Item, field: 'mera' | 'opis_i_obrazlozenje', val: string) => {
         const updatedItem = { ...item, [field]: val };
@@ -59,13 +68,18 @@ export default function TabelaF5({ procenaId, readOnly = false }: TabelaF5Props)
         setItems(prev => prev.map(p => p.id === item.id ? updatedItem : p));
 
         try {
-            await fetch(`/api/procena/${procenaId}/prilog-f5`, {
+            const res = await fetch(`/api/procena/${procenaId}/prilog-f5`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedItem)
             });
+            if (!res.ok) {
+                throw new Error(`Status ${res.status}`);
+            }
+            setGreskaCuvanja(false);
         } catch (err) {
             console.error("Error updating item", err);
+            setGreskaCuvanja(true);
         }
     };
 
@@ -79,12 +93,15 @@ export default function TabelaF5({ procenaId, readOnly = false }: TabelaF5Props)
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ group_id: groupId, mera: '', opis_i_obrazlozenje: '' })
             });
-            if (res.ok) {
-                const result = await res.json();
-                setItems(prev => [...prev, { id: result.id, group_id: groupId, mera: '', opis_i_obrazlozenje: '' }]);
+            if (!res.ok) {
+                throw new Error(`Status ${res.status}`);
             }
+            const result = await res.json();
+            setItems(prev => [...prev, { id: result.id, group_id: groupId, mera: '', opis_i_obrazlozenje: '' }]);
+            setGreskaCuvanja(false);
         } catch (err) {
             console.error("Error adding row", err);
+            setGreskaCuvanja(true);
         }
     };
 
@@ -96,21 +113,44 @@ export default function TabelaF5({ procenaId, readOnly = false }: TabelaF5Props)
         setItems(prev => prev.filter(p => p.id !== id));
 
         try {
-            await fetch(`/api/procena/${procenaId}/prilog-f5`, {
+            const res = await fetch(`/api/procena/${procenaId}/prilog-f5`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, action: 'delete' })
             });
+            if (!res.ok) {
+                throw new Error(`Status ${res.status}`);
+            }
+            setGreskaCuvanja(false);
         } catch (err) {
+            // Red je već uklonjen sa ekrana, pa neuspelo brisanje mora da se vidi
             console.error("Error deleting row", err);
+            setGreskaCuvanja(true);
         }
     };
 
-    if (loading) return <div>Учитавање...</div>;
+    if (loading) return <div className="mb-6 text-center text-sm text-slate-500">Учитавање...</div>;
+
+    if (greskaUcitavanja) {
+        return (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+                <p className="text-sm font-medium text-red-800">Табела Ф.5 није учитана</p>
+                <p className="mt-1 text-sm text-red-700">Већ унете мере нису приказане. Покушајте поново пре него што нешто уносите.</p>
+                <button onClick={ucitajMere} className={`${btn.secondary} mt-4`}>
+                    Покушај поново
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="mb-6 border-2 border-gray-800 rounded p-4 bg-white relative">
             <h5 className="font-bold text-center mb-4 text-gray-800">Табела Ф.5 – Мере за поступање са ризицима</h5>
+            {greskaCuvanja && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    Последња измена није сачувана. Проверите везу и покушајте поново.
+                </div>
+            )}
             <div className="overflow-x-auto">
                 <table className="w-full border-collapse border-2 border-gray-800 text-xs">
                     <thead>
