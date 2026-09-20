@@ -29,7 +29,10 @@ interface RiskAssessmentTableProps {
 
 
 export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelectionChange, onPrilogMUpdate, onUnsavedChanges, readOnly = false, activeTab, onGoToTab }: RiskAssessmentTableProps) {
+    // Rucne izmene korisnika i preracun pri ucitavanju se prate odvojeno:
+    // preracun ne sme da trazi potvrdu pri promeni grupe ni da uzbunjuje pri otvaranju
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [preracunatePromene, setPreracunatePromene] = useState(false);
 
     // Use custom hooks for data management
     const {
@@ -68,7 +71,7 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
 
 
 
-    // Notify parent component about unsaved changes
+    // Roditelj pita za potvrdu samo kada postoje rucne izmene
     useEffect(() => {
         if (onUnsavedChanges) {
             onUnsavedChanges(hasUnsavedChanges);
@@ -101,7 +104,7 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
             setPrilogMData(new Map(recalculated.map(item => [item.id, item])));
         }
         if (promenjeno) {
-            setHasUnsavedChanges(true);
+            setPreracunatePromene(true);
         }
     }, [initialLoading, readOnly, currentFinancialData, hasValidFinancialData, prilogMData, setPrilogMData]);
 
@@ -115,6 +118,12 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
     // Create getCellClass function with current selections
     const getCellClassWithSelections = (riskId: string, level: number, hasContent: boolean) => {
         return getCellClass(riskId, level, hasContent, selections);
+    };
+
+    // Cuvanje upisuje i rucne izmene i preracunate vrednosti
+    const sacuvajPromene = async () => {
+        await handleSaveChanges();
+        setPreracunatePromene(false);
     };
 
     const handlePrilogMItemUpdate = (itemId: string, field: 'posledice' | 'steta' | 'opisIdentifikovanihRizika', value: number | string) => {
@@ -148,7 +157,8 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
             riskGroupData={riskGroupData}
             selections={selections}
             prilogMData={prilogMData}
-            hasUnsavedChanges={hasUnsavedChanges}
+            hasUnsavedChanges={hasUnsavedChanges || preracunatePromene}
+            samoPreracun={!hasUnsavedChanges && preracunatePromene}
             saving={saving}
             loading={loading}
             hasValidFinancialData={hasValidFinancialData}
@@ -159,7 +169,7 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
             setPendingRiskData={setPendingRiskData}
             onCellClick={handleCellClick}
             onParametersSet={handleParametersSet}
-            onSaveChanges={handleSaveChanges}
+            onSaveChanges={sacuvajPromene}
             getCellClass={getCellClassWithSelections}
             onPrilogMUpdate={handlePrilogMItemUpdate}
             readOnly={readOnly}

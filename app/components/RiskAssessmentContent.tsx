@@ -38,6 +38,7 @@ interface RiskAssessmentContentProps {
     selections: Map<string, RiskSelection>;
     prilogMData: Map<string, PrilogMData>;
     hasUnsavedChanges: boolean;
+    samoPreracun?: boolean;
     saving: boolean;
     loading: boolean;
     hasValidFinancialData: boolean;
@@ -62,6 +63,7 @@ export default function RiskAssessmentContent({
     selections,
     prilogMData,
     hasUnsavedChanges,
+    samoPreracun = false,
     saving,
     loading,
     hasValidFinancialData,
@@ -282,7 +284,11 @@ export default function RiskAssessmentContent({
             {hasUnsavedChanges && !readOnly && (
                 <div className="fixed inset-x-0 bottom-0 z-40 border-t border-amber-200 bg-amber-50/95 backdrop-blur">
                     <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-                        <p className="text-sm font-medium text-amber-800">Имате несачуване промене.</p>
+                        <p className="text-sm text-amber-800">
+                            {samoPreracun
+                                ? 'Вредности су прерачунате према важећим финансијским подацима.'
+                                : 'Имате несачуване промене.'}
+                        </p>
                         <button onClick={onSaveChanges} disabled={saving} className={btn.primary}>
                             {saving ? 'Чувам...' : 'Сачувај промене'}
                         </button>
