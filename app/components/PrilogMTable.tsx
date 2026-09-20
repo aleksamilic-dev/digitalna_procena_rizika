@@ -1,4 +1,5 @@
 "use client";
+import { TriangleAlert } from "lucide-react";
 import React, { useState } from "react";
 import { PrilogMData, AgregatniRedM, aggregatePrilogMPoNivoima } from "../data/riskDataLoader";
 import Image from "next/image";
@@ -468,19 +469,17 @@ export default function PrilogMTable({ prilogMData, onShowDetails, onUpdateItem,
                                                     {item.prihvatljivost === 'NEPRIHVATLJIV' ? 'NE' : 'DA'}
                                                 </span>
                                                 {item.usingDefaultFinancialData && (
-                                                    <span className="text-orange-600 text-xs mt-1" title="Koriste se default finansijski podaci - rezultat može biti netačan">
-                                                        ⚠️
-                                                    </span>
+                                                    <TriangleAlert className="mt-1 h-3.5 w-3.5 text-amber-600" aria-label="Користе се подразумевани финансијски подаци - резултат може бити нетачан" />
                                                 )}
                                             </div>
                                         </td>
                                         <td className="border border-gray-800 px-1 py-2 text-center">
                                             <button
                                                 onClick={() => onShowDetails(item)}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded"
-                                                title="Prikaži detaljne kalkulacije"
+                                                className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                                title="Прикажи детаљне калкулације"
                                             >
-                                                📊
+                                                Детаљи
                                             </button>
                                         </td>
                                     </tr>

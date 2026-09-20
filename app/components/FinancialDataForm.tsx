@@ -78,7 +78,7 @@ export default function FinancialDataForm({ procenaId, initialData, onSave, onCl
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800">
-              💰 Finansijski подаци за процену
+              Финансијски подаци за процену
             </h2>
             <button
               onClick={onClose}
@@ -178,7 +178,7 @@ export default function FinancialDataForm({ procenaId, initialData, onSave, onCl
 
             {/* Kalkulacija preview */}
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-blue-800 mb-2">📊 Pregled kalkulacije</h3>
+              <h3 className="font-semibold text-blue-800 mb-2">Преглед калкулације</h3>
               <div className="text-sm text-blue-700 space-y-1">
                 <div>
                   <strong>SŠ procenat:</strong> {formData.poslovniPrihodi > 0 ?

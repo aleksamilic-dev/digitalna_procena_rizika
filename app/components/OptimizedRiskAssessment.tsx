@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, ChevronLeft, ChevronRight, CircleCheck, Download, Eye, Pencil, Wallet } from 'lucide-react';
 import { RISK_GROUPS } from '../data/riskGroups';
 import { getRiskGroupData, normalizePrilogMRow, type PrilogMData } from '../data/riskDataLoader';
 import RiskAssessmentTable from './RiskAssessmentTable';
 import FinancialDataForm from './FinancialDataForm';
+import { btn, card, ProgressBar, Spinner, StatusBadge } from './ui';
 
 const DEBUG_RISK_ASSESSMENT = process.env.NODE_ENV === 'development';
 
@@ -20,23 +23,54 @@ interface RiskSelection {
     description: string;
 }
 
-interface OptimizedRiskAssessmentProps {
-    procenaId: string;
-    pravnoLice?: {
-        id: number;
-        naziv: string;
-        pib: string;
-        adresa: string;
-    } | null;
-    readOnly?: boolean;
-    onNewAssessment?: () => void;
+export interface ProcenaInfo {
+    pravnoLiceId: number;
+    naziv: string;
+    pib: string;
+    status: string;
+    datum: string;
 }
 
-export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnly = false, onNewAssessment }: OptimizedRiskAssessmentProps) {
+export type AssessmentTab = 'identifikacija' | 'prilog-m' | 'prilog-lj' | 'prilog-s-b1' | 'prilozi-t-u-ch' | 'akt-f';
+
+const TABS: { id: AssessmentTab; label: string }[] = [
+    { id: 'identifikacija', label: 'Идентификација ризика' },
+    { id: 'prilog-m', label: 'Прилог М' },
+    { id: 'prilog-lj', label: 'Прилог Љ' },
+    { id: 'prilog-s-b1', label: 'Прилози С и Б1' },
+    { id: 'prilozi-t-u-ch', label: 'Прилози Т, У и Ћ' },
+    { id: 'akt-f', label: 'Акт о процени (Ф)' },
+];
+
+const KATEGORIJE: { id: 1 | 2 | 3 | 4 | 5; naziv: string; boja: string }[] = [
+    { id: 1, naziv: 'Изразито велики', boja: 'bg-red-50 text-red-700 ring-red-600/20' },
+    { id: 2, naziv: 'Велики', boja: 'bg-orange-50 text-orange-700 ring-orange-600/20' },
+    { id: 3, naziv: 'Умерено велики', boja: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
+    { id: 4, naziv: 'Мали', boja: 'bg-sky-50 text-sky-700 ring-sky-600/20' },
+    { id: 5, naziv: 'Врло мали', boja: 'bg-green-50 text-green-700 ring-green-600/20' },
+];
+
+// Ukupan broj stavki po grupi zavisi samo od definicije priloga, pa se računa jednom
+const STAVKE_PO_GRUPI = new Map(RISK_GROUPS.map(group => {
+    const ids = new Set<string>();
+    getRiskGroupData(group.id)?.risks.forEach(risk => risk.items.forEach(item => ids.add(item.id)));
+    return [group.id, ids] as const;
+}));
+
+interface OptimizedRiskAssessmentProps {
+    procenaId: string;
+    procena: ProcenaInfo;
+    readOnly?: boolean;
+    modeToggleHref: string;
+}
+
+export default function OptimizedRiskAssessment({ procenaId, procena, readOnly = false, modeToggleHref }: OptimizedRiskAssessmentProps) {
     const [activeGroupId, setActiveGroupId] = useState<string>('group1');
+    const [activeTab, setActiveTab] = useState<AssessmentTab>('identifikacija');
     const [allSelections, setAllSelections] = useState<Map<string, RiskSelection[]>>(new Map());
     const [allPrilogMData, setAllPrilogMData] = useState<Map<string, PrilogMData[]>>(new Map());
     const [loading, setLoading] = useState(false);
+    const [finishing, setFinishing] = useState(false);
     const [showFinancialForm, setShowFinancialForm] = useState(false);
     const [financialInitialData, setFinancialInitialData] = useState<{
         poslovniPrihodi: number;
@@ -270,7 +304,7 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
     };
 
     // Funkcija za potvrdu prelaska na drugi prilog
-    const handleGroupSwitch = (newGroupId: string) => {
+    const handleGroupSwitch = (newGroupId: string): boolean => {
         if (hasUnsavedChanges) {
             const confirmed = confirm(
                 'Имате несачуване промене за тренутни прилог.\n\n' +
@@ -279,284 +313,205 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
             );
 
             if (!confirmed) {
-                return; // Ne menjaj prilog ako korisnik nije potvrdio
+                return false; // Ne menjaj prilog ako korisnik nije potvrdio
             }
         }
 
         setActiveGroupId(newGroupId);
         setHasUnsavedChanges(false); // Reset unsaved changes flag
+        return true;
+    };
+
+    // Napredak po grupi za navigaciju; Set sprečava da se ista stavka broji dvaput
+    const groupProgress = useMemo(() => {
+        const napredak = new Map<string, { zavrseno: number; ukupno: number }>();
+        RISK_GROUPS.forEach(group => {
+            const ids = STAVKE_PO_GRUPI.get(group.id) ?? new Set<string>();
+            const zavrsene = new Set<string>();
+            (allPrilogMData.get(group.id) || []).forEach(item => {
+                if (ids.has(item.id)) zavrsene.add(item.id);
+            });
+            (allSelections.get(group.id) || []).forEach(selection => {
+                if (selection.danger_level === 0 && ids.has(selection.risk_id)) zavrsene.add(selection.risk_id);
+            });
+            napredak.set(group.id, { zavrseno: zavrsene.size, ukupno: ids.size });
+        });
+        return napredak;
+    }, [allPrilogMData, allSelections]);
+
+    // Upozori pre zatvaranja ili osvežavanja stranice sa nesačuvanim izmenama
+    useEffect(() => {
+        if (!hasUnsavedChanges || readOnly) return;
+        const handler = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [hasUnsavedChanges, readOnly]);
+
+    const handleFinish = async () => {
+        setFinishing(true);
+        try {
+            const response = await fetch(`/api/procena/${procenaId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'zavrsena' })
+            });
+            if (!response.ok) {
+                throw new Error(`Status ${response.status}`);
+            }
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Greška pri ažuriranju statusa procene:', error);
+            alert('Статус процене није ажуриран. Покушајте поново.');
+            setFinishing(false);
+        }
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-blue-600 font-medium">Учитавам процену ризика...</p>
-                </div>
-            </div>
-        );
+        return <Spinner label="Учитавам процену ризика..." />;
     }
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    const activeIndex = RISK_GROUPS.findIndex(group => group.id === activeGroupId);
+    const prevGroup = RISK_GROUPS[activeIndex - 1];
+    const nextGroup = RISK_GROUPS[activeIndex + 1];
+    const oznakaGrupe = (name: string) => name.replace(' (нормативан)', '');
 
-                {/* Header sa statistikama */}
-                <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-800">
-                                Procena Rizika
-                            </h1>
-                            <div className="text-gray-600 mt-2 space-y-1">
-                                {pravnoLice && (
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                                        <div className="flex items-center gap-1">
-                                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                            </svg>
-                                            <span className="font-medium">{pravnoLice.naziv}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                            <span>PIB: {pravnoLice.pib}</span>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-1">
-                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                                    </svg>
-                                    <span>Procena ID: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{procenaId}</span></span>
-                                </div>
+    const goToGroup = (groupId: string) => {
+        if (handleGroupSwitch(groupId)) {
+            document.getElementById('grupe-rizika')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
+    return (
+        <div className={hasUnsavedChanges && !readOnly ? 'pb-24' : ''}>
+            {/* Zaglavlje procene sa napretkom i karticama */}
+            <div className="border-b border-slate-200 bg-white">
+                <div className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8">
+                    <Link href="/procena-history" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-blue-600">
+                        <ArrowLeft className="h-4 w-4" />
+                        Све процене
+                    </Link>
+
+                    <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <h1 className="text-2xl font-semibold text-slate-900">{procena.naziv}</h1>
+                                <StatusBadge status={procena.status} cirilica />
                             </div>
+                            <p className="mt-1 text-sm text-slate-600">
+                                ПИБ {procena.pib} · Процена #{procenaId} · креирана {new Date(procena.datum).toLocaleDateString('sr-RS')}
+                            </p>
                         </div>
 
-                        <div className="flex gap-2">
-                            {onNewAssessment && (
-                                <button
-                                    onClick={onNewAssessment}
-                                    className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                    </svg>
-                                    Novo pravno lice
-                                </button>
+                        <div className="flex flex-wrap gap-2">
+                            {readOnly ? (
+                                <Link href={modeToggleHref} className={btn.primary}>
+                                    <Pencil className="h-4 w-4" />
+                                    Уреди
+                                </Link>
+                            ) : (
+                                <Link href={modeToggleHref} className={btn.secondary}>
+                                    <Eye className="h-4 w-4" />
+                                    Само преглед
+                                </Link>
                             )}
-
                             {!readOnly && (
-                                <button
-                                    onClick={openFinancialForm}
-                                    className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-                                >
-                                    💰 Finansijski podaci
+                                <button onClick={openFinancialForm} className={btn.secondary}>
+                                    <Wallet className="h-4 w-4" />
+                                    Финансијски подаци
                                 </button>
                             )}
-
-                            <button
-                                onClick={exportData}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-                            >
-                                📊 Izvezi Podatke
+                            <button onClick={exportData} className={btn.secondary} title="Преузми све податке процене као JSON датотеку">
+                                <Download className="h-4 w-4" />
+                                Извези
                             </button>
                         </div>
                     </div>
 
-                    {/* Upozorenje o nesačuvanim promenama */}
-                    {hasUnsavedChanges && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-3">
-                            <div className="flex-shrink-0">
-                                <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-yellow-800">
-                                    ⚠️ Имате несачуване промене за тренутни прилог
-                                </p>
-                                <p className="text-xs text-yellow-700 mt-1">
-                                    Кликните &quot;Сачувај промене&quot; да сачувате ваше измене пре преласка на други прилог.
-                                </p>
-                            </div>
-                        </div>
+                    {readOnly && (
+                        <p className="mt-4 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
+                            Режим прегледа — измене нису могуће. Кликните „Уреди“ да бисте мењали процену.
+                        </p>
                     )}
 
-                    {/* Statistike */}
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                            <h3 className="text-sm font-medium text-blue-600">Ukupno stavki</h3>
-                            <p className="text-2xl font-bold text-blue-800">{statistics.totalItems}</p>
+                    <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-8">
+                        <div className="flex-1">
+                            <div className="flex items-baseline justify-between gap-4 text-sm">
+                                <span className="font-medium text-slate-700">Напредак процене</span>
+                                <span className="text-slate-600">
+                                    {statistics.completedItems} од {statistics.totalItems} ставки · <span className="font-semibold text-slate-900">{statistics.completionPercentage}%</span>
+                                </span>
+                            </div>
+                            <ProgressBar percent={statistics.completionPercentage} className="mt-2 h-2" />
                         </div>
-
-                        <div className="bg-green-50 p-4 rounded-lg">
-                            <h3 className="text-sm font-medium text-green-600">Završeno</h3>
-                            <p className="text-2xl font-bold text-green-800">{statistics.completedItems}</p>
-                        </div>
-
-                        <div className="bg-yellow-50 p-4 rounded-lg">
-                            <h3 className="text-sm font-medium text-yellow-600">Napredak</h3>
-                            <p className="text-2xl font-bold text-yellow-800">{statistics.completionPercentage}%</p>
-                        </div>
-
-                        <div className="bg-red-50 p-4 rounded-lg">
-                            <h3 className="text-sm font-medium text-red-600">Visoki rizici</h3>
-                            <p className="text-2xl font-bold text-red-800">{statistics.highRiskItems}</p>
-                        </div>
-
-                        <div className="bg-purple-50 p-4 rounded-lg">
-                            <h3 className="text-sm font-medium text-purple-600">Grupe</h3>
-                            <p className="text-2xl font-bold text-purple-800">
-                                {Array.from(allPrilogMData.values()).filter(data => data.length > 0).length}/{RISK_GROUPS.length}
-                            </p>
+                        <div className="flex flex-wrap gap-1.5" aria-label="Број ризика по категоријама">
+                            {KATEGORIJE.map(kategorija => (
+                                <span
+                                    key={kategorija.id}
+                                    title={`${kategorija.id}. категорија ризика`}
+                                    className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${kategorija.boja}`}
+                                >
+                                    {kategorija.naziv}
+                                    <span className="font-semibold">{statistics.riskCategories[kategorija.id]}</span>
+                                </span>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Progress bar */}
-                    <div className="mt-4">
-                        <div className="flex justify-between text-sm text-gray-600 mb-1">
-                            <span>Napredak procene</span>
-                            <span>{statistics.completionPercentage}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${statistics.completionPercentage}%` }}
-                            ></div>
-                        </div>
-                    </div>
+                    <nav className="-mb-px mt-5 flex gap-6 overflow-x-auto" aria-label="Делови процене">
+                        {TABS.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                aria-current={activeTab === tab.id ? 'page' : undefined}
+                                className={`whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${activeTab === tab.id
+                                    ? 'border-blue-600 text-blue-700'
+                                    : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                                    }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </nav>
                 </div>
+            </div>
 
-                {/* Kategorije rizika */}
-                <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">📊 Kategorije Rizika</h2>
-                    <div className="grid grid-cols-5 gap-4">
-                        {Object.entries(statistics.riskCategories).map(([category, count]) => {
-                            const categoryInfo = {
-                                '1': { name: 'PRVA (Izrazito veliki)', color: 'bg-red-100 text-red-800 border-red-200' },
-                                '2': { name: 'DRUGA (Veliki)', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-                                '3': { name: 'TREĆA (Umereno veliki)', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-                                '4': { name: 'ČETVRTA (Mali)', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-                                '5': { name: 'PETA (Vrlo mali)', color: 'bg-green-100 text-green-800 border-green-200' }
-                            };
-
-                            const info = categoryInfo[category as keyof typeof categoryInfo];
-
-                            return (
-                                <div key={category} className={`p-3 rounded-lg border-2 ${info.color}`}>
-                                    <div className="text-xs font-medium mb-1">{info.name}</div>
-                                    <div className="text-2xl font-bold">{count}</div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Navigacija između grupa */}
-                <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">📋 Grupe Rizika</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {RISK_GROUPS.map((group) => {
+            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                {/* Navigacija između grupa rizika */}
+                {activeTab === 'identifikacija' && (
+                    <div id="grupe-rizika" className="mb-6 grid scroll-mt-20 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                        {RISK_GROUPS.map(group => {
+                            const { zavrseno, ukupno } = groupProgress.get(group.id) ?? { zavrseno: 0, ukupno: 0 };
+                            const procenat = ukupno > 0 ? Math.round((zavrseno / ukupno) * 100) : 0;
                             const isActive = group.id === activeGroupId;
-
-                            // Filtriraj stavke po grupi na osnovu ID-ja stavke umesto groupId iz baze
-                            const groupData = getRiskGroupData(group.id);
-                            const groupItemIds = new Set<string>();
-                            if (groupData) {
-                                groupData.risks.forEach(risk => {
-                                    risk.items.forEach(item => {
-                                        groupItemIds.add(item.id);
-                                    });
-                                });
-                            }
-
-                            // Broji samo stavke koje pripadaju ovoj grupi na osnovu ID-ja
-                            let completedItems = 0;
-                            const currentGroupItems = allPrilogMData.get(group.id) || [];
-                            currentGroupItems.forEach(item => {
-                                if (groupItemIds.has(item.id)) {
-                                    completedItems++;
-                                }
-                            });
-
-                            // Dodaj N/A stavke za ovu grupu
-                            const groupSelections = allSelections.get(group.id) || [];
-                            groupSelections.forEach(selection => {
-                                if (selection.danger_level === 0 && groupItemIds.has(selection.risk_id)) {
-                                    completedItems++;
-                                }
-                            });
-
-                            const totalItems = groupItemIds.size;
-
-                            // Debug informacije - samo za problematične grupe
-                            if (completedItems > totalItems && completedItems > 0) {
-                                console.warn(`⚠️ Grupa ${group.id}: completedItems (${completedItems}) > totalItems (${totalItems})`);
-                                const groupItems = allPrilogMData.get(group.id) || [];
-                                debugLog('🔍 Stavke u grupi:', groupItems.map(item => ({ id: item.id, groupId: item.groupId })));
-                                debugLog('🔍 Ukupno stavki u grupi iz definicije:', totalItems);
-                            }
-
-                            const isCompleted = completedItems > 0;
-                            const completionPercentage = totalItems > 0 ? Math.min(100, Math.round((completedItems / totalItems) * 100)) : 0;
 
                             return (
                                 <button
                                     key={group.id}
                                     onClick={() => handleGroupSwitch(group.id)}
-                                    className={`p-4 rounded-lg border-2 text-left transition-all ${isActive
-                                        ? 'border-blue-500 bg-blue-50'
-                                        : isCompleted
-                                            ? 'border-green-300 bg-green-50 hover:border-green-400'
-                                            : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                                    title={group.description}
+                                    aria-current={isActive ? 'true' : undefined}
+                                    className={`rounded-lg border px-3 py-2 text-left transition-colors ${isActive
+                                        ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
+                                        : 'border-slate-200 bg-white hover:border-slate-300'
                                         }`}
                                 >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-medium text-gray-800">{group.name}</h3>
-                                        <div className="flex items-center gap-2">
-                                            {completionPercentage === 100 && <span className="text-green-600">✅</span>}
-                                            {completionPercentage > 0 && completionPercentage < 100 && (
-                                                <span className="text-yellow-600">⏳</span>
-                                            )}
-                                        </div>
+                                    <div className="flex items-center justify-between gap-2 text-xs">
+                                        <span className="font-semibold text-slate-900">{oznakaGrupe(group.name)}</span>
+                                        {procenat === 100
+                                            ? <CircleCheck className="h-4 w-4 text-green-600" aria-label="Завршено" />
+                                            : <span className="text-slate-500">{zavrseno}/{ukupno}</span>}
                                     </div>
-                                    <p className="text-sm text-gray-600 line-clamp-2">{group.description}</p>
-
-                                    {/* Progress info */}
-                                    <div className="mt-3 space-y-2">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-gray-600">
-                                                {completedItems} од {totalItems} завршено
-                                            </span>
-                                            <span className={`font-medium ${completionPercentage === 100 ? 'text-green-600' :
-                                                completionPercentage > 0 ? 'text-yellow-600' :
-                                                    'text-gray-400'
-                                                }`}>
-                                                {completionPercentage}%
-                                            </span>
-                                        </div>
-
-                                        {/* Progress bar */}
-                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                            <div
-                                                className={`h-1.5 rounded-full transition-all duration-300 ${completionPercentage === 100 ? 'bg-green-500' :
-                                                    completionPercentage > 0 ? 'bg-yellow-500' :
-                                                        'bg-gray-300'
-                                                    }`}
-                                                style={{ width: `${Math.min(100, completionPercentage)}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
+                                    <div className="mt-0.5 truncate text-xs text-slate-600">{group.kratkiNaziv}</div>
+                                    <ProgressBar percent={procenat} className="mt-2" />
                                 </button>
                             );
                         })}
                     </div>
-                </div>
+                )}
 
-                {/* Aktivna tabela */}
                 {activeGroupData && activeGroupInfo && (
                     <RiskAssessmentTable
                         procenaId={procenaId}
@@ -565,87 +520,65 @@ export default function OptimizedRiskAssessment({ procenaId, pravnoLice, readOnl
                         onPrilogMUpdate={activeGroupPrilogMCallback}
                         onUnsavedChanges={setHasUnsavedChanges}
                         readOnly={readOnly}
+                        activeTab={activeTab}
+                        onGoToTab={setActiveTab}
                     />
                 )}
 
-                {/* Dugme "Gotovo" - prikazuje se kada su sve grupe završene */}
-                {statistics.completionPercentage === 100 && (
-                    <div className="bg-white rounded-2xl shadow-xl p-6 mt-8">
-                        <div className="text-center">
-                            <div className="mb-4">
-                                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                </div>
-                                <h2 className="text-2xl font-bold text-gray-800 mb-2">🎉 Procena rizika je završena!</h2>
-                                <p className="text-gray-600 mb-6">
-                                    Uspešno ste završili procenu rizika za sve grupe.
-                                    Ukupno je procenjeno {statistics.completedItems} stavki.
-                                </p>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <button
-                                    onClick={exportData}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
-                                >
-                                    📊 Izvezi Rezultate
-                                </button>
-
-                                {!readOnly && (
-                                    <button
-                                        onClick={async () => {
-                                            try {
-                                                // Ažuriraj status procene na 'zavrsena'
-                                                const response = await fetch(`/api/procena/${procenaId}/status`, {
-                                                    method: 'PUT',
-                                                    headers: {
-                                                        'Content-Type': 'application/json',
-                                                    },
-                                                    body: JSON.stringify({ status: 'zavrsena' })
-                                                });
-
-                                                if (response.ok) {
-                                                    debugLog('✅ Status procene ažuriran na "zavrsena"');
-                                                    window.location.href = '/';
-                                                } else {
-                                                    console.error('❌ Greška pri ažuriranju statusa procene');
-                                                    // I dalje preusmeri korisnika, ali prikaži upozorenje
-                                                    alert('Procena je završena, ali status možda nije ažuriran. Kontaktirajte administratora.');
-                                                    window.location.href = '/';
-                                                }
-                                            } catch (error) {
-                                                console.error('❌ Greška pri komunikaciji sa serverom:', error);
-                                                alert('Procena je završena, ali status možda nije ažuriran. Kontaktirajte administratora.');
-                                                window.location.href = '/';
-                                            }
-                                        }}
-                                        className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        ✅ Gotovo - Povratak na početnu
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+                {/* Prelazak na susednu grupu bez vraćanja na vrh stranice */}
+                {activeTab === 'identifikacija' && (
+                    <div className="mt-6 flex items-center justify-between gap-4">
+                        {prevGroup ? (
+                            <button onClick={() => goToGroup(prevGroup.id)} className={btn.secondary}>
+                                <ChevronLeft className="h-4 w-4" />
+                                {oznakaGrupe(prevGroup.name)}
+                            </button>
+                        ) : <span />}
+                        {nextGroup ? (
+                            <button onClick={() => goToGroup(nextGroup.id)} className={btn.primary}>
+                                Следећа: {oznakaGrupe(nextGroup.name)}
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                        ) : (
+                            <button onClick={() => setActiveTab('prilog-m')} className={btn.primary}>
+                                Прилог М
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                        )}
                     </div>
                 )}
 
-                {/* Modal za finansijske podatke */}
-                {showFinancialForm && (
-                    <FinancialDataForm
-                        procenaId={procenaId}
-                        initialData={financialInitialData}
-                        onSave={(data) => {
-                            debugLog('Finansijski podaci sačuvani:', data);
-                            // Tabela procene preračunava štetu i nivo rizika sa novim podacima
-                            window.dispatchEvent(new CustomEvent('financialDataSaved', { detail: { procenaId, data } }));
-                        }}
-                        onClose={() => setShowFinancialForm(false)}
-                    />
+                {statistics.completionPercentage === 100 && !readOnly && procena.status !== 'zavrsena' && (
+                    <div className={`${card} mt-6 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between`}>
+                        <div className="flex items-start gap-3">
+                            <CircleCheck className="h-6 w-6 shrink-0 text-green-600" />
+                            <div>
+                                <h2 className="font-semibold text-slate-900">Све ставке су процењене</h2>
+                                <p className="mt-1 text-sm text-slate-600">
+                                    Процењено је {statistics.completedItems} ставки. Када попуните и остале прилоге, означите процену као завршену.
+                                </p>
+                            </div>
+                        </div>
+                        <button onClick={handleFinish} disabled={finishing} className={btn.primary}>
+                            {finishing ? 'Чувам...' : 'Заврши процену'}
+                        </button>
+                    </div>
                 )}
-
             </div>
+
+            {/* Modal za finansijske podatke */}
+            {showFinancialForm && (
+                <FinancialDataForm
+                    procenaId={procenaId}
+                    initialData={financialInitialData}
+                    onSave={(data) => {
+                        debugLog('Finansijski podaci sačuvani:', data);
+                        // Tabela procene preračunava štetu i nivo rizika sa novim podacima
+                        window.dispatchEvent(new CustomEvent('financialDataSaved', { detail: { procenaId, data } }));
+                    }}
+                    onClose={() => setShowFinancialForm(false)}
+                />
+            )}
         </div>
     );
 }

@@ -6,6 +6,8 @@ import { useRiskAssessmentData } from "./hooks/useRiskAssessmentData";
 import { useRiskAssessmentActions } from "./hooks/useRiskAssessmentActions";
 import { getCellClass } from "./utils/riskAssessmentHelpers";
 import RiskAssessmentContent from "./RiskAssessmentContent";
+import type { AssessmentTab } from "./OptimizedRiskAssessment";
+import { card } from "./ui";
 
 interface RiskSelection {
     risk_id: string;
@@ -20,11 +22,13 @@ interface RiskAssessmentTableProps {
     onPrilogMUpdate?: (prilogMData: PrilogMData[]) => void;
     onUnsavedChanges?: (hasUnsaved: boolean) => void;
     readOnly?: boolean;
+    activeTab: AssessmentTab;
+    onGoToTab: (tab: AssessmentTab) => void;
 }
 
 
 
-export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelectionChange, onPrilogMUpdate, onUnsavedChanges, readOnly = false }: RiskAssessmentTableProps) {
+export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelectionChange, onPrilogMUpdate, onUnsavedChanges, readOnly = false, activeTab, onGoToTab }: RiskAssessmentTableProps) {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     // Use custom hooks for data management
@@ -130,11 +134,9 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
 
     if (initialLoading) {
         return (
-            <div className="bg-white rounded-2xl p-8 shadow-xl border border-blue-100">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-blue-600 font-medium">Учитавам табелу за процену ризика...</p>
-                </div>
+            <div className={`${card} p-8 text-center text-sm text-slate-500`}>
+                <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600"></div>
+                Учитавам табелу за процену ризика...
             </div>
         );
     }
@@ -161,6 +163,8 @@ export default function RiskAssessmentTable({ procenaId, riskGroupData, onSelect
             getCellClass={getCellClassWithSelections}
             onPrilogMUpdate={handlePrilogMItemUpdate}
             readOnly={readOnly}
+            activeTab={activeTab}
+            onGoToTab={onGoToTab}
         />
     );
 }

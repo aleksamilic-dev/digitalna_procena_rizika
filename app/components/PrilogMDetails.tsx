@@ -15,7 +15,7 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800">
-              📊 Detaljne kalkulacije - {data.id}
+              Детаљне калкулације - {data.id}
             </h2>
             <button
               onClick={onClose}
@@ -28,7 +28,7 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
           <div className="space-y-6">
             {/* Osnovni podaci */}
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-bold text-blue-800 mb-2">📋 Osnovni podaci</h3>
+              <h3 className="font-bold text-blue-800 mb-2">Основни подаци</h3>
               <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                 <div><strong>ID:</strong> {data.id}</div>
                 <div><strong>Grupa:</strong> {data.groupId}</div>
@@ -38,7 +38,7 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
 
             {/* Kalkulacije prema standardu */}
             <div className="bg-green-50 p-4 rounded-lg">
-              <h3 className="font-bold text-green-800 mb-4">🧮 Kalkulacije prema SRPS A.L2.003:2025</h3>
+              <h3 className="font-bold text-green-800 mb-4">Калкулације према SRPS A.L2.003:2025</h3>
 
               {/* Kolona 4: Izloženost */}
               <div className="mb-4 p-3 bg-white rounded border">
@@ -141,7 +141,7 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
 
             {/* Finalni rezultati */}
             <div className="bg-yellow-50 p-4 rounded-lg">
-              <h3 className="font-bold text-yellow-800 mb-4">🎯 Finalni rezultati</h3>
+              <h3 className="font-bold text-yellow-800 mb-4">Финални резултати</h3>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-3 rounded border">
@@ -174,7 +174,7 @@ export default function PrilogMDetails({ data, onClose }: PrilogMDetailsProps) {
 
             {/* Matrice reference */}
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-bold text-gray-800 mb-4">📚 Reference na standard</h3>
+              <h3 className="font-bold text-gray-800 mb-4">Референце на стандард</h3>
               <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
                 <div>
                   <strong>Matrica verovatnoće:</strong><br />
