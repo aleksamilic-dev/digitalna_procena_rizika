@@ -18,10 +18,10 @@ interface LegalEntityFormProps {
     loadingLabel?: string;
 }
 
-export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Започни процену ризика", loadingLabel = "⏳ Сачекајте..." }: LegalEntityFormProps) {
+export default function LegalEntityForm({ onSuccess, submitLabel = "Сачувај и започни процену", loadingLabel = "Чувам..." }: LegalEntityFormProps) {
     // Stilovi za input polja
-    const inputStyle = "w-full p-4 border border-slate-300 rounded-xl text-black placeholder-slate-500 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200 text-base font-medium";
-    const textareaStyle = "w-full p-4 border border-slate-300 rounded-xl text-black placeholder-slate-500 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200 resize-none text-base font-medium";
+    const inputStyle = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20";
+    const textareaStyle = "w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20";
 
     // Form state za pravno lice
     const [naziv, setNaziv] = useState('');
@@ -93,33 +93,23 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
     return (
         <form
             onSubmit={handleSubmitPravnoLice}
-            className="relative bg-white p-12 rounded-2xl shadow-xl border border-slate-200 space-y-8"
+            className="space-y-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
         >
-            {/* Header */}
-            <div className="text-center border-b border-slate-200 pb-8 mb-2">
-                <div className="flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full shadow-lg mx-auto mb-6">
-                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                </div>
-                <h2 className="text-3xl font-bold text-slate-800 mb-2">
-                    Подаци о правном лицу
-                </h2>
-                <p className="text-slate-600">
-                    Унесите податке о правном лицу
-                </p>
+            <div className="border-b border-slate-200 pb-4">
+                <h2 className="text-xl font-semibold text-slate-900">Подаци о правном лицу</h2>
+                <p className="mt-1 text-sm text-slate-600">Поља означена звездицом су обавезна.</p>
             </div>
 
             <div className="flex flex-col gap-8 w-full">
                 {/* Основни подаци */}
                 <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-slate-800 border-b border-slate-200 pb-3">
-                        📋 Основни подаци
+                    <h3 className="border-b border-slate-200 pb-2 text-base font-semibold text-slate-900">
+                        Основни подаци
                     </h3>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="flex flex-col gap-2">
-                            <label htmlFor="naziv" className="text-base font-semibold text-slate-700">
+                            <label htmlFor="naziv" className="text-sm font-medium text-slate-700">
                                 Пословно име (пун назив) *
                             </label>
                             <input
@@ -134,7 +124,7 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <label htmlFor="skraceno_poslovno_ime" className="text-base font-semibold text-slate-700">
+                            <label htmlFor="skraceno_poslovno_ime" className="text-sm font-medium text-slate-700">
                                 Скраћено пословно име
                             </label>
                             <input
@@ -150,7 +140,7 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="flex flex-col gap-2">
-                            <label htmlFor="pib" className="text-base font-semibold text-slate-700">
+                            <label htmlFor="pib" className="text-sm font-medium text-slate-700">
                                 ПИБ *
                             </label>
                             <input
@@ -165,7 +155,7 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <label htmlFor="maticni_broj" className="text-base font-semibold text-slate-700">
+                            <label htmlFor="maticni_broj" className="text-sm font-medium text-slate-700">
                                 Матични број
                             </label>
                             <input
@@ -180,7 +170,7 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label htmlFor="sifra_delatnosti" className="text-base font-semibold text-slate-700">
+                        <label htmlFor="sifra_delatnosti" className="text-sm font-medium text-slate-700">
                             Шифра делатности
                         </label>
                         <input
@@ -196,12 +186,12 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
 
                 {/* Адресе */}
                 <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-slate-800 border-b border-slate-200 pb-3">
-                        🏢 Адресе
+                    <h3 className="border-b border-slate-200 pb-2 text-base font-semibold text-slate-900">
+                        Адресе
                     </h3>
 
                     <div className="flex flex-col gap-2">
-                        <label htmlFor="adresa_sediste" className="text-base font-semibold text-slate-700">
+                        <label htmlFor="adresa_sediste" className="text-sm font-medium text-slate-700">
                             Адреса седишта
                         </label>
                         <input
@@ -215,7 +205,7 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label htmlFor="adresa_ostala" className="text-base font-semibold text-slate-700">
+                        <label htmlFor="adresa_ostala" className="text-sm font-medium text-slate-700">
                             Адресе огранака и осталих функционалних целина
                         </label>
                         <textarea
@@ -231,13 +221,13 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
 
                 {/* Контакт подаци */}
                 <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-slate-800 border-b border-slate-200 pb-3">
-                        📞 Контакт подаци
+                    <h3 className="border-b border-slate-200 pb-2 text-base font-semibold text-slate-900">
+                        Контакт подаци
                     </h3>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="flex flex-col gap-2">
-                            <label htmlFor="telefon_faks" className="text-base font-semibold text-slate-700">
+                            <label htmlFor="telefon_faks" className="text-sm font-medium text-slate-700">
                                 Број телефона / факса
                             </label>
                             <input
@@ -251,7 +241,7 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <label htmlFor="internet_adresa" className="text-base font-semibold text-slate-700">
+                            <label htmlFor="internet_adresa" className="text-sm font-medium text-slate-700">
                                 Интернет адреса
                             </label>
                             <input
@@ -268,12 +258,12 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
 
                 {/* Одговорна лица */}
                 <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-slate-800 border-b border-slate-200 pb-3">
-                        👥 Одговорна лица
+                    <h3 className="border-b border-slate-200 pb-2 text-base font-semibold text-slate-900">
+                        Одговорна лица
                     </h3>
 
                     <div className="flex flex-col gap-2">
-                        <label htmlFor="lice_zastupanje" className="text-base font-semibold text-slate-700">
+                        <label htmlFor="lice_zastupanje" className="text-sm font-medium text-slate-700">
                             Лице одговорно за заступање
                         </label>
                         <input
@@ -287,7 +277,7 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label htmlFor="lice_komunikacija" className="text-base font-semibold text-slate-700">
+                        <label htmlFor="lice_komunikacija" className="text-sm font-medium text-slate-700">
                             Лице овлашћено за комуникацију у вези процене ризика
                         </label>
                         <input
@@ -301,7 +291,7 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label htmlFor="tim_procena_rizika" className="text-base font-semibold text-slate-700">
+                        <label htmlFor="tim_procena_rizika" className="text-sm font-medium text-slate-700">
                             Тим за процену ризика
                         </label>
                         <textarea
@@ -321,7 +311,7 @@ export default function LegalEntityForm({ onSuccess, submitLabel = "🚀 Зап�
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-5 px-8 rounded-xl shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                    className="w-full rounded-lg bg-blue-600 px-6 py-3 font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     {loading ? loadingLabel : submitLabel}
                 </button>

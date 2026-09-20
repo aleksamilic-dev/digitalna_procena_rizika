@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbConnection } from '../../../lib/db';
 import { handleApiError } from '../../../lib/api-error';
+import { RISK_GROUPS } from '../../data/riskGroups';
+import { getRiskGroupData } from '../../data/riskDataLoader';
+
+// Ukupan broj stavki u prilozima В-Л; procena je gotova kada je svaka stavka procenjena ili označena kao N/A
+const UKUPNO_STAVKI = RISK_GROUPS.reduce((ukupno, group) =>
+    ukupno + (getRiskGroupData(group.id)?.risks.reduce((zbir, risk) => zbir + risk.items.length, 0) ?? 0), 0);
 
 export async function GET() {
     try {
@@ -8,7 +14,7 @@ export async function GET() {
 
         // Dobij sve procene sa podacima o pravnom licu
         const result = await pool.query(`
-            SELECT 
+            SELECT
                 pr.id,
                 pr."createdAt" as datum,
                 pr.status,
@@ -18,13 +24,21 @@ export async function GET() {
                 pl.adresa,
                 -- Statistike za svaku procenu iz PrilogM tabele
                 (SELECT COUNT(*)::int FROM "PrilogM" pm WHERE pm."procenaId" = pr.id) as "ukupnoRizika",
-                (SELECT COUNT(*)::int FROM "PrilogM" pm WHERE pm."procenaId" = pr.id AND pm."kategorijaRizika" IN ('1', '2')) as "visokoRizicniRizici"
+                (SELECT COUNT(*)::int FROM "PrilogM" pm WHERE pm."procenaId" = pr.id AND pm."kategorijaRizika" IN ('1', '2')) as "visokoRizicniRizici",
+                -- Završene stavke: procenjene (Prilog M) i označene kao N/A
+                (SELECT COUNT(*)::int FROM (
+                    SELECT pm."itemId" FROM "PrilogM" pm WHERE pm."procenaId" = pr.id
+                    UNION
+                    SELECT rs."riskId" FROM "RiskSelection" rs WHERE rs."procenaId" = pr.id AND rs."dangerLevel" = 0
+                ) zavrsene) as "zavrsenoStavki"
             FROM "ProcenaRizika" pr
             INNER JOIN "PravnoLice" pl ON pr."pravnoLiceId" = pl.id
             ORDER BY pr."createdAt" DESC
         `);
 
-        return NextResponse.json(result.rows, {
+        const procene = result.rows.map(row => ({ ...row, ukupnoStavki: UKUPNO_STAVKI }));
+
+        return NextResponse.json(procene, {
             headers: {
                 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60'
             }

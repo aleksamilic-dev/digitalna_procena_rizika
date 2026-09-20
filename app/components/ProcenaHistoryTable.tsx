@@ -1,12 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { FileDown, Search, Trash2 } from "lucide-react";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { btn, card, input, Spinner, StatusBadge } from './ui';
 
 interface ProcenaData {
     id: number;
     datum: string;
+    status: string;
     pravnoLiceId: number;
     naziv: string;
     pib: string;
@@ -72,7 +75,6 @@ export default function ProcenaHistoryTable({}: ProcenaHistoryTableProps) {
             if (response.ok) {
                 // Ukloni procenu iz lokalnog state-a
                 setProocene(prev => prev.filter(p => p.id !== procenaId));
-                alert('Процена је успешно обрисана.');
             } else {
                 const errorData = await response.json();
                 alert(`Грешка при брисању: ${errorData.error}`);
@@ -101,7 +103,7 @@ export default function ProcenaHistoryTable({}: ProcenaHistoryTableProps) {
 
             exportContent.innerHTML = `
                 <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #1e40af; font-size: 24px; margin-bottom: 10px;">📊 Историја Процена Ризика</h1>
+                    <h1 style="color: #1e40af; font-size: 24px; margin-bottom: 10px;">Историја процена ризика</h1>
                     <p style="color: #374151; font-size: 14px;">Генерисано: ${currentDate}</p>
                 </div>
                 
@@ -215,7 +217,7 @@ export default function ProcenaHistoryTable({}: ProcenaHistoryTableProps) {
         const safeUkupno = ukupno || 0;
         
         if (safeUkupno === 0) {
-            return <span className="text-gray-400 text-sm">Нема ризика</span>;
+            return <span className="text-xs text-slate-400">—</span>;
         }
 
         const procenat = (safeVisokoRizicni / safeUkupno) * 100;
@@ -255,199 +257,110 @@ export default function ProcenaHistoryTable({}: ProcenaHistoryTableProps) {
         });
 
     if (loading) {
-        return (
-            <div className="bg-white rounded-2xl p-8 shadow-xl border border-blue-100">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-blue-600 font-medium">Учитавам историју процена...</p>
-                </div>
-            </div>
-        );
+        return <Spinner label="Учитавам процене..." />;
     }
 
     if (error) {
         return (
-            <div className="bg-white rounded-2xl p-8 shadow-xl border border-red-100">
-                <div className="text-center">
-                    <div className="text-red-600 mb-4">⚠️</div>
-                    <p className="text-red-600 font-medium">{error}</p>
-                    <button
-                        onClick={loadProocene}
-                        className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-                    >
-                        Покушај поново
-                    </button>
-                </div>
+            <div className={`${card} p-8 text-center`}>
+                <p className="text-sm font-medium text-red-600">{error}</p>
+                <button onClick={loadProocene} className={`${btn.secondary} mt-4`}>
+                    Покушај поново
+                </button>
             </div>
         );
     }
 
+    const sortIndikator = (column: 'datum' | 'naziv') =>
+        sortBy === column ? <span>{sortOrder === 'asc' ? '↑' : '↓'}</span> : null;
+
     return (
-        <div className="bg-white rounded-2xl shadow-xl border border-blue-100">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h2 className="text-2xl font-bold text-blue-800">
-                            📊 Историја Процена Ризика
-                        </h2>
-                        <p className="text-blue-600 mt-1">
-                            Преглед свих правних лица и њихових процена ризика
-                        </p>
-                    </div>
+        <div className={card}>
+            {/* Pretraga, zbirni podaci i izvoz */}
+            <div className="flex flex-col gap-4 border-b border-slate-200 p-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="relative w-full lg:w-80">
+                    <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Претражи по називу или ПИБ-у..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className={`${input} pl-9`}
+                    />
+                </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        {/* Search */}
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="Претражи по називу или ПИБ-у..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-700"
-                            />
-                            <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-
-                        {/* Export PDF Button */}
-                        <button
-                            onClick={handleExportToPDF}
-                            disabled={exportingPDF || filteredAndSortedProocene.length === 0}
-                            className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
-                        >
-                            {exportingPDF ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    Експортујем...
-                                </>
-                            ) : (
-                                <>
-                                    📄 Експорт у PDF
-                                </>
-                            )}
-                        </button>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    <div className="flex gap-6 text-sm text-slate-600">
+                        <span><span className="font-semibold text-slate-900">{procene.length}</span> укупно</span>
+                        <span><span className="font-semibold text-slate-900">{procene.filter(p => p.status === 'u_toku').length}</span> у току</span>
+                        <span><span className="font-semibold text-red-600">{procene.reduce((sum, p) => sum + (p.visokoRizicniRizici || 0), 0)}</span> високих ризика</span>
                     </div>
+                    <button
+                        onClick={handleExportToPDF}
+                        disabled={exportingPDF || filteredAndSortedProocene.length === 0}
+                        className={btn.secondary}
+                    >
+                        <FileDown className="h-4 w-4" />
+                        {exportingPDF ? 'Извозим...' : 'Извези у PDF'}
+                    </button>
                 </div>
             </div>
 
-            {/* Statistics */}
-            <div className="p-6 bg-gray-50 border-b border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{procene.length}</div>
-                        <div className="text-sm text-gray-600">Укупно процена</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">
-                            {procene.reduce((sum, p) => sum + (p.visokoRizicniRizici || 0), 0)}
-                        </div>
-                        <div className="text-sm text-gray-600">Високи ризици</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                <table className="w-full text-sm">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th className="px-6 py-3 text-left">
-                                <button
-                                    onClick={() => handleSort('naziv')}
-                                    className="flex items-center gap-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700"
-                                >
-                                    Правно лице
-                                    {sortBy === 'naziv' && (
-                                        <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                                    )}
+                            <th className="px-4 py-3">
+                                <button onClick={() => handleSort('naziv')} className="flex items-center gap-1 uppercase hover:text-slate-700">
+                                    Правно лице {sortIndikator('naziv')}
                                 </button>
                             </th>
-                            <th className="px-6 py-3 text-left">
-                                <button
-                                    onClick={() => handleSort('datum')}
-                                    className="flex items-center gap-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700"
-                                >
-                                    Датум процене
-                                    {sortBy === 'datum' && (
-                                        <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                                    )}
+                            <th className="px-4 py-3">
+                                <button onClick={() => handleSort('datum')} className="flex items-center gap-1 uppercase hover:text-slate-700">
+                                    Креирана {sortIndikator('datum')}
                                 </button>
                             </th>
-
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ризици
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ниво ризика
-                            </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Акције
-                            </th>
+                            <th className="px-4 py-3">Статус</th>
+                            <th className="px-4 py-3">Ризици</th>
+                            <th className="px-4 py-3">Ниво ризика</th>
+                            <th className="px-4 py-3"><span className="sr-only">Акције</span></th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="divide-y divide-slate-100">
                         {filteredAndSortedProocene.map((procena) => (
-                            <tr key={procena.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4">
-                                    <div>
-                                        <div className="text-sm font-medium text-gray-900">
-                                            {procena.naziv}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            ПИБ: {procena.pib}
-                                        </div>
-                                        {procena.adresa && (
-                                            <div className="text-xs text-gray-400 mt-1">
-                                                {procena.adresa}
-                                            </div>
-                                        )}
-                                    </div>
+                            <tr key={procena.id} className="hover:bg-slate-50">
+                                <td className="px-4 py-3">
+                                    <Link href={`/optimized-risk/${procena.id}`} className="font-medium text-slate-900 hover:text-blue-600">
+                                        {procena.naziv}
+                                    </Link>
+                                    <div className="text-xs text-slate-500">ПИБ {procena.pib}</div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">
-                                        {new Date(procena.datum).toLocaleDateString('sr-RS')}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                        {new Date(procena.datum).toLocaleTimeString('sr-RS', {
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
-                                    </div>
+                                <td className="whitespace-nowrap px-4 py-3 text-slate-700">
+                                    {new Date(procena.datum).toLocaleDateString('sr-RS')}
                                 </td>
-
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">
-                                        {procena.ukupnoRizika || 0} укупно
-                                    </div>
-                                    <div className="text-xs text-red-600">
-                                        {procena.visokoRizicniRizici || 0} високих
-                                    </div>
+                                <td className="whitespace-nowrap px-4 py-3">
+                                    <StatusBadge status={procena.status} cirilica />
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="whitespace-nowrap px-4 py-3 text-slate-700">
+                                    {procena.ukupnoRizika || 0}
+                                    {(procena.visokoRizicniRizici || 0) > 0 && (
+                                        <span className="ml-1 text-xs text-red-600">({procena.visokoRizicniRizici} високих)</span>
+                                    )}
+                                </td>
+                                <td className="whitespace-nowrap px-4 py-3">
                                     {getRiskLevelBadge(procena.visokoRizicniRizici, procena.ukupnoRizika)}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div className="flex justify-end gap-2">
-                                        <Link
-                                            href={`/optimized-risk/${procena.id}`}
-                                            className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg transition-colors"
-                                        >
-                                            Прегледај
+                                <td className="whitespace-nowrap px-4 py-3">
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Link href={`/optimized-risk/${procena.id}`} className={btn.secondary}>
+                                            {procena.status === 'u_toku' ? 'Настави' : 'Отвори'}
                                         </Link>
-                                        <Link
-                                            href={`/optimized-risk/${procena.id}?edit=true`}
-                                            className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-lg transition-colors"
-                                        >
-                                            Уреди
-                                        </Link>
-
                                         <button
                                             onClick={() => handleDeleteProcena(procena.id, procena.naziv)}
-                                            className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-lg transition-colors"
+                                            className={btn.iconDanger}
+                                            title="Обриши процену"
                                         >
-                                            Обриши
+                                            <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
                                 </td>
@@ -458,15 +371,12 @@ export default function ProcenaHistoryTable({}: ProcenaHistoryTableProps) {
             </div>
 
             {filteredAndSortedProocene.length === 0 && (
-                <div className="text-center py-12">
-                    <div className="text-gray-400 text-6xl mb-4">📋</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Нема процена за приказ
-                    </h3>
-                    <p className="text-gray-500">
+                <div className="py-12 text-center">
+                    <h3 className="text-sm font-medium text-slate-900">Нема процена за приказ</h3>
+                    <p className="mt-1 text-sm text-slate-500">
                         {searchTerm
-                            ? 'Покушајте са другачијим филтерима за претрагу.'
-                            : 'Нема процена за приказ.'}
+                            ? 'Покушајте са другачијим појмом за претрагу.'
+                            : 'Нову процену започните дугметом „Нова процена“.'}
                     </p>
                 </div>
             )}

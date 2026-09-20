@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { btn, card, input, pageContainer, Spinner } from '../components/ui';
 
 interface Korisnik {
     id: number;
@@ -139,57 +140,45 @@ export default function Profil() {
 
     if (!korisnik) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-100">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Učitavanje...</p>
-                </div>
-            </div>
+            <Spinner label="Učitavanje..." />
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
-            {/* Main Content */}
-            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className={pageContainer}>
+            <main className="mx-auto max-w-3xl">
+                <div className={`${card} overflow-hidden`}>
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-                        <div className="flex items-center space-x-4">
-                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                                <span className="text-white text-2xl font-bold">
-                                    {korisnik.ime.charAt(0)}{korisnik.prezime.charAt(0)}
-                                </span>
-                            </div>
-                            <div className="text-white">
-                                <h1 className="text-2xl font-bold">{korisnik.ime} {korisnik.prezime}</h1>
-                                <p className="text-blue-100">{korisnik.email}</p>
-                                {korisnik.je_admin && (
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white/20 text-white mt-2">
-                                        Administrator
-                                    </span>
-                                )}
-                            </div>
+                    <div className="flex items-center gap-4 border-b border-slate-200 px-6 py-5">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-700">
+                            {korisnik.ime.charAt(0)}{korisnik.prezime.charAt(0)}
+                        </span>
+                        <div>
+                            <h1 className="text-lg font-semibold text-slate-900">{korisnik.ime} {korisnik.prezime}</h1>
+                            <p className="text-sm text-slate-600">
+                                {korisnik.email}
+                                {korisnik.je_admin && <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">Administrator</span>}
+                            </p>
                         </div>
                     </div>
 
                     {/* Tabs */}
-                    <div className="border-b border-gray-200">
-                        <nav className="flex space-x-8 px-8">
+                    <div className="border-b border-slate-200">
+                        <nav className="flex gap-6 px-6">
                             <button
                                 onClick={() => setActiveTab('osnovni')}
-                                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'osnovni'
-                                        ? 'border-blue-500 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                className={`border-b-2 px-1 py-3 text-sm font-medium transition-colors ${activeTab === 'osnovni'
+                                        ? 'border-blue-600 text-blue-700'
+                                        : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
                                     }`}
                             >
                                 Osnovni podaci
                             </button>
                             <button
                                 onClick={() => setActiveTab('lozinka')}
-                                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'lozinka'
-                                        ? 'border-blue-500 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                className={`border-b-2 px-1 py-3 text-sm font-medium transition-colors ${activeTab === 'lozinka'
+                                        ? 'border-blue-600 text-blue-700'
+                                        : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
                                     }`}
                             >
                                 Promena lozinke
@@ -198,10 +187,10 @@ export default function Profil() {
                     </div>
 
                     {/* Content */}
-                    <div className="p-8">
+                    <div className="p-6">
                         {/* Messages */}
                         {error && (
-                            <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+                            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
                                 <div className="flex items-center">
                                     <svg className="h-5 w-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -212,7 +201,7 @@ export default function Profil() {
                         )}
 
                         {success && (
-                            <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4">
+                            <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
                                 <div className="flex items-center">
                                     <svg className="h-5 w-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -227,28 +216,28 @@ export default function Profil() {
                             <form onSubmit={handleUpdateProfile} className="space-y-6">
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label htmlFor="ime" className="block text-sm font-semibold text-gray-700">
+                                        <label htmlFor="ime" className="block text-sm font-medium text-slate-700">
                                             Ime
                                         </label>
                                         <input
                                             id="ime"
                                             type="text"
                                             required
-                                            className="block w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                            className={input}
                                             value={formData.ime}
                                             onChange={(e) => setFormData({ ...formData, ime: e.target.value })}
                                         />
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label htmlFor="prezime" className="block text-sm font-semibold text-gray-700">
+                                        <label htmlFor="prezime" className="block text-sm font-medium text-slate-700">
                                             Prezime
                                         </label>
                                         <input
                                             id="prezime"
                                             type="text"
                                             required
-                                            className="block w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                            className={input}
                                             value={formData.prezime}
                                             onChange={(e) => setFormData({ ...formData, prezime: e.target.value })}
                                         />
@@ -256,14 +245,14 @@ export default function Profil() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+                                    <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                                         Email adresa
                                     </label>
                                     <input
                                         id="email"
                                         type="email"
                                         required
-                                        className="block w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className={input}
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     />
@@ -273,7 +262,7 @@ export default function Profil() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                        className={btn.primary}
                                     >
                                         {loading ? 'Čuvanje...' : 'Sačuvaj izmene'}
                                     </button>
@@ -285,43 +274,43 @@ export default function Profil() {
                         {activeTab === 'lozinka' && (
                             <form onSubmit={handleChangePassword} className="space-y-6">
                                 <div className="space-y-2">
-                                    <label htmlFor="trenutnaLozinka" className="block text-sm font-semibold text-gray-700">
+                                    <label htmlFor="trenutnaLozinka" className="block text-sm font-medium text-slate-700">
                                         Trenutna lozinka
                                     </label>
                                     <input
                                         id="trenutnaLozinka"
                                         type="password"
                                         required
-                                        className="block w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className={input}
                                         value={formData.trenutnaLozinka}
                                         onChange={(e) => setFormData({ ...formData, trenutnaLozinka: e.target.value })}
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="novaLozinka" className="block text-sm font-semibold text-gray-700">
+                                    <label htmlFor="novaLozinka" className="block text-sm font-medium text-slate-700">
                                         Nova lozinka
                                     </label>
                                     <input
                                         id="novaLozinka"
                                         type="password"
                                         required
-                                        className="block w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className={input}
                                         value={formData.novaLozinka}
                                         onChange={(e) => setFormData({ ...formData, novaLozinka: e.target.value })}
                                     />
-                                    <p className="text-xs text-gray-500">Minimalno 6 karaktera</p>
+                                    <p className="text-xs text-slate-500">Minimalno 6 karaktera</p>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="potvrdaLozinke" className="block text-sm font-semibold text-gray-700">
+                                    <label htmlFor="potvrdaLozinke" className="block text-sm font-medium text-slate-700">
                                         Potvrda nove lozinke
                                     </label>
                                     <input
                                         id="potvrdaLozinke"
                                         type="password"
                                         required
-                                        className="block w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className={input}
                                         value={formData.potvrdaLozinke}
                                         onChange={(e) => setFormData({ ...formData, potvrdaLozinke: e.target.value })}
                                     />
@@ -331,7 +320,7 @@ export default function Profil() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                        className={btn.primary}
                                     >
                                         {loading ? 'Menjanje...' : 'Promeni lozinku'}
                                     </button>

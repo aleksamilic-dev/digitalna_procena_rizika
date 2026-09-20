@@ -1,193 +1,154 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowRight, Plus } from 'lucide-react';
+import { btn, card, pageContainer, PageHeader, ProgressBar, Spinner } from './components/ui';
 
-interface Korisnik {
+interface Procena {
     id: number;
-    email: string;
-    ime: string;
-    prezime: string;
-    je_admin: boolean;
+    datum: string;
+    status: string;
+    naziv: string;
+    pib: string;
+    ukupnoRizika: number;
+    visokoRizicniRizici: number;
+    zavrsenoStavki: number;
+    ukupnoStavki: number;
 }
 
 export default function Home() {
-    const [korisnik, setKorisnik] = useState<Korisnik | null>(null);
-    const router = useRouter();
-
-
+    const [ime, setIme] = useState('');
+    const [procene, setProcene] = useState<Procena[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        const korisnikData = localStorage.getItem('korisnik');
-
-        if (token && korisnikData) {
-            setKorisnik(JSON.parse(korisnikData));
-        } else {
-            // Ako nema tokena, preusmeri na prijavu
-            router.push('/prijava');
+        try {
+            const korisnik = JSON.parse(localStorage.getItem('korisnik') || 'null');
+            setIme(korisnik?.ime ?? '');
+        } catch {
+            // Ime u pozdravu nije obavezno
         }
-    }, [router]);
 
-    // Dodaj listener za promene u localStorage
-    useEffect(() => {
-        const handleStorageChange = () => {
-            const korisnikData = localStorage.getItem('korisnik');
-            if (korisnikData) {
-                setKorisnik(JSON.parse(korisnikData));
-            }
-        };
-
-        // Slušaj promene u localStorage
-        window.addEventListener('storage', handleStorageChange);
-
-        // Takođe proveravaj kada se komponenta fokusira (vraćaš se sa druge stranice)
-        window.addEventListener('focus', handleStorageChange);
-
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener('focus', handleStorageChange);
-        };
+        fetch('/api/procena')
+            .then(response => {
+                if (!response.ok) throw new Error();
+                return response.json();
+            })
+            .then(setProcene)
+            .catch(() => setError('Greška pri učitavanju procena.'))
+            .finally(() => setLoading(false));
     }, []);
 
-    if (!korisnik) {
-        // Prikaži loading dok se proverava auth status
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-100">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Učitavanje...</p>
-                </div>
-            </div>
-        );
-    }
+    const uToku = procene.filter(p => p.status === 'u_toku');
+    const zavrsene = procene.filter(p => p.status === 'zavrsena').slice(0, 5);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
-            {/* Hero Section */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="text-center mb-16">
-                    <div className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-6">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        SRPS A.L2.003:2025 Sertifikovano
-                    </div>
-                    <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                        Дигитални регистар<br />
-                        <span className="text-blue-600">процене ризика</span>
-                    </h1>
-                    <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
-                        Професионални систем за процену и управљање ризицима у складу са најновијим стандардима.
-                        Обезбедите безбедност вашег радног окружења кроз систематичну анализу и праћење ризика.
-                    </p>
+        <div className={pageContainer}>
+            <PageHeader
+                title={ime ? `Dobrodošli, ${ime}` : 'Dobrodošli'}
+                description="Procene u toku i poslednje završene procene."
+                actions={
+                    <>
+                        <Link href="/pravna-lica/novi" className={btn.secondary}>
+                            <Plus className="h-4 w-4" />
+                            Novo pravno lice
+                        </Link>
+                        <Link href="/optimized-risk" className={btn.primary}>
+                            <Plus className="h-4 w-4" />
+                            Nova procena
+                        </Link>
+                    </>
+                }
+            />
+
+            {loading ? (
+                <Spinner label="Učitavanje..." />
+            ) : error ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+            ) : (
+                <div className="space-y-8">
+                    <section>
+                        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                            U toku ({uToku.length})
+                        </h2>
+                        {uToku.length === 0 ? (
+                            <div className={`${card} p-8 text-center`}>
+                                <p className="text-sm text-slate-600">Trenutno nema procena u toku.</p>
+                                <Link href="/optimized-risk" className={`${btn.primary} mt-4`}>
+                                    <Plus className="h-4 w-4" />
+                                    Započni novu procenu
+                                </Link>
+                            </div>
+                        ) : (
+                            <ul className={`${card} divide-y divide-slate-100`}>
+                                {uToku.map(procena => {
+                                    const procenat = procena.ukupnoStavki > 0
+                                        ? Math.min(100, Math.round((procena.zavrsenoStavki / procena.ukupnoStavki) * 100))
+                                        : 0;
+                                    return (
+                                        <li key={procena.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+                                            <div className="min-w-0 flex-1">
+                                                <Link href={`/optimized-risk/${procena.id}`} className="font-medium text-slate-900 hover:text-blue-600">
+                                                    {procena.naziv}
+                                                </Link>
+                                                <p className="text-xs text-slate-500">
+                                                    PIB {procena.pib} · započeta {new Date(procena.datum).toLocaleDateString('sr-Latn-RS')}
+                                                    {procena.visokoRizicniRizici > 0 && (
+                                                        <span className="text-red-600"> · {procena.visokoRizicniRizici} visokih rizika</span>
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <div className="w-full sm:w-56">
+                                                <div className="mb-1 flex justify-between text-xs text-slate-600">
+                                                    <span>{procena.zavrsenoStavki} od {procena.ukupnoStavki} stavki</span>
+                                                    <span className="font-medium text-slate-900">{procenat}%</span>
+                                                </div>
+                                                <ProgressBar percent={procenat} />
+                                            </div>
+                                            <Link href={`/optimized-risk/${procena.id}`} className={btn.primary}>
+                                                Nastavi
+                                                <ArrowRight className="h-4 w-4" />
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </section>
+
+                    {zavrsene.length > 0 && (
+                        <section>
+                            <div className="mb-3 flex items-baseline justify-between">
+                                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                                    Nedavno završene
+                                </h2>
+                                <Link href="/procena-history" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                                    Sve procene →
+                                </Link>
+                            </div>
+                            <ul className={`${card} divide-y divide-slate-100`}>
+                                {zavrsene.map(procena => (
+                                    <li key={procena.id} className="flex items-center justify-between gap-4 p-4">
+                                        <div className="min-w-0">
+                                            <Link href={`/optimized-risk/${procena.id}`} className="font-medium text-slate-900 hover:text-blue-600">
+                                                {procena.naziv}
+                                            </Link>
+                                            <p className="text-xs text-slate-500">
+                                                PIB {procena.pib} · {procena.ukupnoRizika} rizika
+                                                {procena.visokoRizicniRizici > 0 && `, ${procena.visokoRizicniRizici} visokih`}
+                                            </p>
+                                        </div>
+                                        <Link href={`/optimized-risk/${procena.id}`} className={btn.secondary}>
+                                            Otvori
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
                 </div>
-
-                {/* Action Cards */}
-                <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-                    <div className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 border border-gray-100 hover:border-blue-200">
-                        <div className="flex items-center mb-6">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                </svg>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-xl font-bold text-gray-900">Нова процена ризика</h3>
-                                <p className="text-gray-600">Започните детаљну анализу</p>
-                            </div>
-                        </div>
-                        <p className="text-gray-600 mb-6 min-h-[3rem]">
-                            Креирајте нову процену ризика користећи наш напредни систем који вас води кроз све неопходне кораке анализе.
-                        </p>
-                        <button
-                            onClick={() => router.push('/optimized-risk')}
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg"
-                        >
-                            Започни процену
-                        </button>
-                    </div>
-
-                    <div className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 border border-gray-100 hover:border-purple-200">
-                        <div className="flex items-center mb-6">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-xl font-bold text-gray-900">Правна лица</h3>
-                                <p className="text-gray-600">Управљајте правним лицима</p>
-                            </div>
-                        </div>
-                        <p className="text-gray-600 mb-6 min-h-[3rem]">
-                            Прегледајте сва правна лица и њихове процене ризика. Креирајте нове процене за постојећа правна лица.
-                        </p>
-                        <button
-                            onClick={() => router.push('/pravna-lica')}
-                            className="w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg"
-                        >
-                            Прегледај правна лица
-                        </button>
-                    </div>
-
-                    <div className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 border border-gray-100 hover:border-green-200">
-                        <div className="flex items-center mb-6">
-                            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-xl font-bold text-gray-900">Историја процена</h3>
-                                <p className="text-gray-600">Прегледајте претходне анализе</p>
-                            </div>
-                        </div>
-                        <p className="text-gray-600 mb-6 min-h-[3rem]">
-                            Приступите свим претходним проценама ризика, анализирајте трендове и пратите напредак у управљању ризицима.
-                        </p>
-                        <button
-                            onClick={() => router.push('/procena-history')}
-                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg"
-                        >
-                            Прегледај историју
-                        </button>
-                    </div>
-                </div>
-
-                {/* Features Section */}
-                <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-                    <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Кључне функционалности</h2>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Стандардизована процена</h3>
-                            <p className="text-gray-600">У складу са SRPS A.L2.003:2025 стандардом</p>
-                        </div>
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Брза анализа</h3>
-                            <p className="text-gray-600">Ефикасан процес процене са аутоматским извештајима</p>
-                        </div>
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Детаљно праћење</h3>
-                            <p className="text-gray-600">Комплетна историја и аналитика свих процена</p>
-                        </div>
-                    </div>
-                </div>
-            </main>
+            )}
         </div>
     );
 }

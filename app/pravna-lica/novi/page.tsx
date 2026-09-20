@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import LegalEntityForm from '../../components/LegalEntityForm';
+import { pageContainer } from '../../components/ui';
 
 export default function NovoPravnoLicePage() {
     const router = useRouter();
@@ -12,25 +15,17 @@ export default function NovoPravnoLicePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 py-8 px-4">
-            {/* Navigation back button */}
-            <div className="max-w-6xl mx-auto mb-6">
-                <button
-                    onClick={() => router.back()}
-                    className="flex items-center text-slate-600 hover:text-blue-600 transition-colors"
-                >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Nazad
-                </button>
-            </div>
+        <div className={pageContainer}>
+            <Link href="/pravna-lica" className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-blue-600">
+                <ArrowLeft className="h-4 w-4" />
+                Pravna lica
+            </Link>
 
-            <div className="max-w-6xl mx-auto">
+            <div>
                 <LegalEntityForm
                     onSuccess={handleSuccess}
-                    submitLabel="💾 Sačuvaj pravno lice"
-                    loadingLabel="💾 Čuvanje..."
+                    submitLabel="Сачувај правно лице"
+                    loadingLabel="Чувам..."
                 />
             </div>
         </div>

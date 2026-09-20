@@ -37,7 +37,7 @@ export default function Prijava() {
                 // Preusmeravanje na početnu stranicu
                 router.push('/');
             } else {
-                setError(data.detalji ? `${data.greška}: ${data.detalji}` : data.greška || 'Došlo je do greške');
+                setError(data.greška || 'Došlo je do greške');
             }
         } catch {
             setError('Došlo je do greške pri slanju zahteva');
@@ -47,11 +47,11 @@ export default function Prijava() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
             <div className="w-full max-w-md">
                 {/* Logo/Brand Section */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg">
+                    <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600">
                         <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
@@ -61,7 +61,7 @@ export default function Prijava() {
                 </div>
 
                 {/* Login Form */}
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+                <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Email Field */}
                         <div className="space-y-2">
@@ -141,7 +141,7 @@ export default function Prijava() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
+                            className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {loading ? (
                                 <div className="flex items-center justify-center">
@@ -174,7 +174,7 @@ export default function Prijava() {
                 {/* Footer */}
                 <div className="text-center mt-8">
                     <p className="text-sm text-gray-500">
-                        © 2024 Vaša kompanija. Sva prava zadržana.
+                        Digitalni registar procene rizika
                     </p>
                 </div>
             </div>
