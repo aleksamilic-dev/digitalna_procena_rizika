@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDbConnection } from '../../../lib/db';
+import { getDbConnection, getRawPool } from '../../../lib/db';
 import { handleApiError } from '../../../lib/api-error';
 import { RISK_GROUPS } from '../../data/riskGroups';
 import { getRiskGroupData } from '../../data/riskDataLoader';
@@ -59,55 +59,138 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const pool = await getDbConnection();
+        const client = await getRawPool().connect();
 
-        // Proveri da li već postoji aktivna procena za ovo pravno lice
-        const existingAssessment = await pool.query(`
-            SELECT id, status FROM "ProcenaRizika"
-            WHERE "pravnoLiceId" = $1 AND status = 'u_toku'
-            ORDER BY "createdAt" DESC
-            LIMIT 1
-        `, [pravnoLiceId]);
+        try {
+            await client.query('BEGIN');
 
-        if (existingAssessment.rows.length > 0) {
+            // Proveri da li već postoji aktivna procena za ovo pravno lice
+            const existingAssessment = await client.query(`
+                SELECT id, status FROM "ProcenaRizika"
+                WHERE "pravnoLiceId" = $1 AND status = 'u_toku'
+                ORDER BY "createdAt" DESC
+                LIMIT 1
+            `, [pravnoLiceId]);
+
+            if (existingAssessment.rows.length > 0) {
+                await client.query('ROLLBACK');
+                return NextResponse.json({
+                    error: 'Već postoji aktivna procena rizika za ovo pravno lice',
+                    existingProcenaId: existingAssessment.rows[0].id
+                }, { status: 400 });
+            }
+
+            // Get the legal entity name for the assessment title
+            const pravnoLiceResult = await client.query('SELECT naziv FROM "PravnoLice" WHERE id = $1', [pravnoLiceId]);
+
+            if (pravnoLiceResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return NextResponse.json(
+                    { error: 'Pravno lice sa datim ID ne postoji' },
+                    { status: 404 }
+                );
+            }
+
+            const pravnoLiceNaziv = pravnoLiceResult.rows[0].naziv;
+
+            // Za svaki prilog pronađi poslednju procenu istog pravnog lica koja ima sačuvane podatke.
+            const sourceAssessments = await client.query<{
+                t_procena_id: number | null;
+                u_procena_id: number | null;
+                ch_procena_id: number | null;
+            }>(`
+                SELECT
+                    (
+                        SELECT t.procena_id
+                        FROM prilog_t t
+                        INNER JOIN "ProcenaRizika" pr ON pr.id = t.procena_id
+                        WHERE pr."pravnoLiceId" = $1
+                        ORDER BY pr."createdAt" DESC, pr.id DESC
+                        LIMIT 1
+                    ) AS t_procena_id,
+                    (
+                        SELECT u.procena_id
+                        FROM prilog_u u
+                        INNER JOIN "ProcenaRizika" pr ON pr.id = u.procena_id
+                        WHERE pr."pravnoLiceId" = $1
+                        ORDER BY pr."createdAt" DESC, pr.id DESC
+                        LIMIT 1
+                    ) AS u_procena_id,
+                    (
+                        SELECT ch.procena_id
+                        FROM prilog_ch ch
+                        INNER JOIN "ProcenaRizika" pr ON pr.id = ch.procena_id
+                        WHERE pr."pravnoLiceId" = $1
+                        ORDER BY pr."createdAt" DESC, pr.id DESC
+                        LIMIT 1
+                    ) AS ch_procena_id
+            `, [pravnoLiceId]);
+
+            // Kreiraj novu procenu
+            const procenaInsertResult = await client.query<{ id: number; createdAt: Date; status: string }>(`
+                INSERT INTO "ProcenaRizika" (naziv, "pravnoLiceId", status)
+                VALUES ($1, $2, 'u_toku')
+                RETURNING id, "createdAt", status
+            `, [`Procena rizika - ${pravnoLiceNaziv}`, pravnoLiceId]);
+
+            const novaProcena = procenaInsertResult.rows[0];
+
+            if (!novaProcena?.id) {
+                throw new Error('Greška pri kreiranju procene rizika');
+            }
+
+            const source = sourceAssessments.rows[0];
+            if (source?.t_procena_id) {
+                await client.query(`
+                    INSERT INTO prilog_t (
+                        procena_id, kapital_score, menadzeri_score, osiguranje_score,
+                        registar_score, zarada_score, prosek_resursa, created_at, updated_at
+                    )
+                    SELECT $1, kapital_score, menadzeri_score, osiguranje_score,
+                        registar_score, zarada_score, prosek_resursa, NOW(), NOW()
+                    FROM prilog_t WHERE procena_id = $2
+                `, [novaProcena.id, source.t_procena_id]);
+            }
+
+            if (source?.u_procena_id) {
+                await client.query(`
+                    INSERT INTO prilog_u (
+                        procena_id, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d,
+                        final_score, updated_at
+                    )
+                    SELECT $1, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d,
+                        final_score, NOW()
+                    FROM prilog_u WHERE procena_id = $2
+                `, [novaProcena.id, source.u_procena_id]);
+            }
+
+            if (source?.ch_procena_id) {
+                await client.query(`
+                    INSERT INTO prilog_ch (
+                        procena_id, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d,
+                        zahtev_dj, final_score, created_at, updated_at
+                    )
+                    SELECT $1, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d,
+                        zahtev_dj, final_score, NOW(), NOW()
+                    FROM prilog_ch WHERE procena_id = $2
+                `, [novaProcena.id, source.ch_procena_id]);
+            }
+
+            await client.query('COMMIT');
+
             return NextResponse.json({
-                error: 'Već postoji aktivna procena rizika za ovo pravno lice',
-                existingProcenaId: existingAssessment.rows[0].id
-            }, { status: 400 });
+                success: true,
+                procenaId: novaProcena.id,
+                pravnoLiceId: pravnoLiceId,
+                datum: novaProcena.createdAt,
+                status: novaProcena.status
+            });
+        } catch (error) {
+            await client.query('ROLLBACK').catch(() => undefined);
+            throw error;
+        } finally {
+            client.release();
         }
-
-        // Get the legal entity name for the assessment title
-        const pravnoLiceResult = await pool.query('SELECT naziv FROM "PravnoLice" WHERE id = $1', [pravnoLiceId]);
-
-        if (pravnoLiceResult.rows.length === 0) {
-            return NextResponse.json(
-                { error: 'Pravno lice sa datim ID ne postoji' },
-                { status: 404 }
-            );
-        }
-
-        const pravnoLiceNaziv = pravnoLiceResult.rows[0].naziv;
-
-        // Kreiraj novu procenu
-        const procenaInsertResult = await pool.query<{ id: number; createdAt: Date; status: string }>(`
-            INSERT INTO "ProcenaRizika" (naziv, "pravnoLiceId", status)
-            VALUES ($1, $2, 'u_toku')
-            RETURNING id, "createdAt", status
-        `, [`Procena rizika - ${pravnoLiceNaziv}`, pravnoLiceId]);
-
-        const novaProcena = procenaInsertResult.rows[0];
-
-        if (!novaProcena?.id) {
-            return NextResponse.json({ error: "Greška pri kreiranju procene rizika" }, { status: 500 });
-        }
-
-        return NextResponse.json({
-            success: true,
-            procenaId: novaProcena.id,
-            pravnoLiceId: pravnoLiceId,
-            datum: novaProcena.createdAt,
-            status: novaProcena.status
-        });
     } catch (error) {
         return handleApiError(error, "kreiranje procene");
     }
