@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
             const pravnoLiceNaziv = pravnoLiceResult.rows[0].naziv;
 
-            // Za svaki prilog pronađi poslednju procenu istog pravnog lica koja ima sačuvane podatke.
+            // Za svaki prilog pronađi poslednju dostupnu procenu koja ima sačuvane podatke.
             const sourceAssessments = await client.query<{
                 t_procena_id: number | null;
                 u_procena_id: number | null;
@@ -104,7 +104,6 @@ export async function POST(request: NextRequest) {
                         SELECT t.procena_id
                         FROM prilog_t t
                         INNER JOIN "ProcenaRizika" pr ON pr.id = t.procena_id
-                        WHERE pr."pravnoLiceId" = $1
                         ORDER BY pr."createdAt" DESC, pr.id DESC
                         LIMIT 1
                     ) AS t_procena_id,
@@ -112,7 +111,6 @@ export async function POST(request: NextRequest) {
                         SELECT u.procena_id
                         FROM prilog_u u
                         INNER JOIN "ProcenaRizika" pr ON pr.id = u.procena_id
-                        WHERE pr."pravnoLiceId" = $1
                         ORDER BY pr."createdAt" DESC, pr.id DESC
                         LIMIT 1
                     ) AS u_procena_id,
@@ -120,11 +118,10 @@ export async function POST(request: NextRequest) {
                         SELECT ch.procena_id
                         FROM prilog_ch ch
                         INNER JOIN "ProcenaRizika" pr ON pr.id = ch.procena_id
-                        WHERE pr."pravnoLiceId" = $1
                         ORDER BY pr."createdAt" DESC, pr.id DESC
                         LIMIT 1
                     ) AS ch_procena_id
-            `, [pravnoLiceId]);
+            `);
 
             // Kreiraj novu procenu
             const procenaInsertResult = await client.query<{ id: number; createdAt: Date; status: string }>(`
