@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-import { getDbConnection } from '@/lib/db';
+import { getDbConnection, getRawPool } from '@/lib/db';
 import { ProcenaRouteContext } from '../../../types';
 
 export async function GET(
@@ -34,7 +34,7 @@ export async function POST(
         const { params } = context;
         const { id: procenaId } = await params;
         const body = await request.json();
-        const pool = await getDbConnection();
+        const client = await getRawPool().connect();
 
         // Calculate final score
         const scores = [
@@ -50,47 +50,77 @@ export async function POST(
             ? parseFloat((scores.reduce((a, b) => Number(a) + Number(b), 0) / scores.length).toFixed(2))
             : 0;
 
-        const existingResult = await pool.query(
-            'SELECT id FROM prilog_u WHERE procena_id = $1',
-            [procenaId]
-        );
+        try {
+            await client.query('BEGIN');
 
-        if (existingResult.rows.length > 0) {
-            await pool.query(
-                `UPDATE prilog_u
-                 SET zahtev_a = $1,
-                     zahtev_b = $2,
-                     zahtev_v = $3,
-                     zahtev_g = $4,
-                     zahtev_d = $5,
-                     final_score = $6,
-                     updated_at = NOW()
-                 WHERE procena_id = $7`,
-                [
-                    body.zahtev_a,
-                    body.zahtev_b,
-                    body.zahtev_v,
-                    body.zahtev_g,
-                    body.zahtev_d,
-                    finalScore,
-                    procenaId
-                ]
+            const existingResult = await client.query(
+                'SELECT id FROM prilog_u WHERE procena_id = $1',
+                [procenaId]
             );
-        } else {
-            await pool.query(
-                `INSERT INTO prilog_u (
-                    procena_id, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, final_score, updated_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-                [
-                    procenaId,
-                    body.zahtev_a,
-                    body.zahtev_b,
-                    body.zahtev_v,
-                    body.zahtev_g,
-                    body.zahtev_d,
-                    finalScore
-                ]
-            );
+
+            if (existingResult.rows.length > 0) {
+                await client.query(
+                    `UPDATE prilog_u
+                     SET zahtev_a = $1,
+                         zahtev_b = $2,
+                         zahtev_v = $3,
+                         zahtev_g = $4,
+                         zahtev_d = $5,
+                         final_score = $6,
+                         updated_at = NOW()
+                     WHERE procena_id = $7`,
+                    [
+                        body.zahtev_a,
+                        body.zahtev_b,
+                        body.zahtev_v,
+                        body.zahtev_g,
+                        body.zahtev_d,
+                        finalScore,
+                        procenaId
+                    ]
+                );
+            } else {
+                await client.query(
+                    `INSERT INTO prilog_u (
+                        procena_id, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d, final_score, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+                    [
+                        procenaId,
+                        body.zahtev_a,
+                        body.zahtev_b,
+                        body.zahtev_v,
+                        body.zahtev_g,
+                        body.zahtev_d,
+                        finalScore
+                    ]
+                );
+            }
+
+            // Čim se ocena u Prilogu U promeni, uskladi izvedenu vrednost u Prilogu Ć.
+            await client.query(`
+                UPDATE prilog_ch ch
+                SET zahtev_v = $2,
+                    final_score = ROUND((
+                        COALESCE(ch.zahtev_a, 0)::numeric
+                        + COALESCE(ch.zahtev_b, 0)::numeric
+                        + $2::numeric
+                        + COALESCE(ch.zahtev_g, 0)::numeric
+                        + COALESCE(ch.zahtev_d, 0)::numeric
+                        + COALESCE(ch.zahtev_dj, 0)::numeric
+                    ) * COALESCE((
+                        SELECT prosek_resursa::numeric
+                        FROM prilog_t WHERE procena_id = $1
+                    ), 0::numeric) / 6, 2),
+                    updated_at = NOW()
+                WHERE ch.procena_id = $1
+            `, [procenaId, finalScore]);
+
+            await client.query('COMMIT');
+        } catch (error) {
+            await client.query('ROLLBACK').catch(() => undefined);
+            throw error;
+        } finally {
+            client.release();
         }
 
         return NextResponse.json({ success: true, finalScore });

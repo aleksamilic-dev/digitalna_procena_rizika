@@ -170,9 +170,21 @@ export async function POST(request: NextRequest) {
                         procena_id, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d,
                         zahtev_dj, final_score, created_at, updated_at
                     )
-                    SELECT $1, zahtev_a, zahtev_b, zahtev_v, zahtev_g, zahtev_d,
-                        zahtev_dj, final_score, NOW(), NOW()
-                    FROM prilog_ch WHERE procena_id = $2
+                    SELECT $1, ch.zahtev_a, ch.zahtev_b, u.final_score, ch.zahtev_g, ch.zahtev_d,
+                        ch.zahtev_dj,
+                        ROUND((
+                            COALESCE(ch.zahtev_a, 0)::numeric
+                            + COALESCE(ch.zahtev_b, 0)::numeric
+                            + COALESCE(u.final_score, 0)::numeric
+                            + COALESCE(ch.zahtev_g, 0)::numeric
+                            + COALESCE(ch.zahtev_d, 0)::numeric
+                            + COALESCE(ch.zahtev_dj, 0)::numeric
+                        ) * COALESCE(t.prosek_resursa, 0)::numeric / 6, 2),
+                        NOW(), NOW()
+                    FROM prilog_ch ch
+                    LEFT JOIN prilog_u u ON u.procena_id = $1
+                    LEFT JOIN prilog_t t ON t.procena_id = $1
+                    WHERE ch.procena_id = $2
                 `, [novaProcena.id, source.ch_procena_id]);
             }
 
