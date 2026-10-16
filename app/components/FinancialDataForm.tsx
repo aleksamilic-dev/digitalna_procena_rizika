@@ -155,7 +155,7 @@ export default function FinancialDataForm({ procenaId, initialData, onSave, onCl
                 min="1"
               />
               <p className="text-xs text-gray-900 mt-1">
-                <strong>Обавезно поље.</strong> Садашња вредност некретина, постројења, опреме и залиха (SVnpoz)
+                <strong>Обавезно поље.</strong> Садашња вредност некретина, постројења, опреме и залиха (SVnpoz). Из биланса стања АОП0009 + АОП0031 сума.
               </p>
             </div>
 
