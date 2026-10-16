@@ -150,9 +150,6 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
                         {F6_ZAKLJUCAK_STAVKE[0].naslov}
                     </div>
-                    <div className="text-sm italic text-gray-700 mb-1 space-y-1">
-                        {F6_ZAKLJUCAK_STAVKE[0].opisi.map(opis => <p key={opis}>{opis}</p>)}
-                    </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"
                         value={data.f6_zakljucak?.tacka_1 || ''}
@@ -165,9 +162,6 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                 <div>
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
                         {F6_ZAKLJUCAK_STAVKE[1].naslov}
-                    </div>
-                    <div className="text-sm italic text-gray-700 mb-1 space-y-1">
-                        {F6_ZAKLJUCAK_STAVKE[1].opisi.map(opis => <p key={opis}>{opis}</p>)}
                     </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"
@@ -182,9 +176,6 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
                         {F6_ZAKLJUCAK_STAVKE[2].naslov}
                     </div>
-                    <div className="text-sm italic text-gray-700 mb-1 space-y-1">
-                        {F6_ZAKLJUCAK_STAVKE[2].opisi.map(opis => <p key={opis}>{opis}</p>)}
-                    </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"
                         value={data.f6_zakljucak?.tacka_3 || ''}
@@ -198,9 +189,6 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
                         {F6_ZAKLJUCAK_STAVKE[3].naslov}
                     </div>
-                    <div className="text-sm italic text-gray-700 mb-1">
-                        {F6_ZAKLJUCAK_STAVKE[3].opisi[0]}
-                    </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"
                         value={data.f6_zakljucak?.tacka_4 || ''}
@@ -213,9 +201,6 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                 <div>
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
                         {F6_ZAKLJUCAK_STAVKE[4].naslov}
-                    </div>
-                    <div className="text-sm italic text-gray-700 mb-1">
-                        {F6_ZAKLJUCAK_STAVKE[4].opisi[0]}
                     </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"

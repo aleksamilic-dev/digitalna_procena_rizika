@@ -74,6 +74,26 @@ export const F6_ZAKLJUCAK_STAVKE = [
     },
 ] as const;
 
+export const F6_ZAKLJUCAK_PODRAZUMEVANI_UNOSI = {
+    tacka_1: F6_ZAKLJUCAK_STAVKE[0].opisi.join('\n'),
+    tacka_2: F6_ZAKLJUCAK_STAVKE[1].opisi.join('\n'),
+    tacka_3: F6_ZAKLJUCAK_STAVKE[2].opisi.join('\n'),
+    tacka_4: F6_ZAKLJUCAK_STAVKE[3].opisi.join('\n'),
+    tacka_5: F6_ZAKLJUCAK_STAVKE[4].opisi.join('\n'),
+} satisfies PrilogFData['f6_zakljucak'];
+
+export function f6ZakljucakSaPodrazumevanimUnosima(
+    podaci?: Partial<PrilogFData['f6_zakljucak']> | null,
+): PrilogFData['f6_zakljucak'] {
+    return {
+        tacka_1: podaci?.tacka_1 || F6_ZAKLJUCAK_PODRAZUMEVANI_UNOSI.tacka_1,
+        tacka_2: podaci?.tacka_2 || F6_ZAKLJUCAK_PODRAZUMEVANI_UNOSI.tacka_2,
+        tacka_3: podaci?.tacka_3 || F6_ZAKLJUCAK_PODRAZUMEVANI_UNOSI.tacka_3,
+        tacka_4: podaci?.tacka_4 || F6_ZAKLJUCAK_PODRAZUMEVANI_UNOSI.tacka_4,
+        tacka_5: podaci?.tacka_5 || F6_ZAKLJUCAK_PODRAZUMEVANI_UNOSI.tacka_5,
+    };
+}
+
 export const INITIAL_PRILOG_F_DATA: PrilogFData = {
     id: 0,
     procena_id: 0,
@@ -99,11 +119,5 @@ export const INITIAL_PRILOG_F_DATA: PrilogFData = {
     f4_identifikacija: '',
     f4_analiza: '',
     f4_vrednovanje: '',
-    f6_zakljucak: {
-        tacka_1: '',
-        tacka_2: '',
-        tacka_3: '',
-        tacka_4: '',
-        tacka_5: ''
-    }
+    f6_zakljucak: F6_ZAKLJUCAK_PODRAZUMEVANI_UNOSI
 };

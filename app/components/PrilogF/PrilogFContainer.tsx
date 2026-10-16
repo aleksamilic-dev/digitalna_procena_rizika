@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import { PrilogFData, INITIAL_PRILOG_F_DATA } from "./PrilogTypes";
+import { f6ZakljucakSaPodrazumevanimUnosima, PrilogFData, INITIAL_PRILOG_F_DATA } from "./PrilogTypes";
 import TabelaF1 from "./TabelaF1";
 import TabelaF2 from "./TabelaF2";
 import TabelaF3 from "./TabelaF3";
@@ -47,7 +47,7 @@ export default function PrilogFContainer({ procenaId, readOnly = false }: Prilog
                     f4_identifikacija: result.fData.f4_identifikacija || '',
                     f4_analiza: result.fData.f4_analiza || '',
                     f4_vrednovanje: result.fData.f4_vrednovanje || '',
-                    f6_zakljucak: result.fData.f6_zakljucak || prev.f6_zakljucak
+                    f6_zakljucak: f6ZakljucakSaPodrazumevanimUnosima(result.fData.f6_zakljucak || prev.f6_zakljucak)
                 }));
             }
         } catch (err) {

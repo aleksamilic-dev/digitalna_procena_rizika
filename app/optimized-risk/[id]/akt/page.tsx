@@ -7,7 +7,7 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import { normalizePrilogMRow, type PrilogMData } from '../../../data/riskDataLoader';
 import { RISK_GROUPS } from '../../../data/riskGroups';
 import { btn, card, Spinner } from '../../../components/ui';
-import { F6_ZAKLJUCAK_STAVKE } from '../../../components/PrilogF/PrilogTypes';
+import { f6ZakljucakSaPodrazumevanimUnosima, F6_ZAKLJUCAK_STAVKE } from '../../../components/PrilogF/PrilogTypes';
 
 interface ProcenaInfo {
     naziv: string;
@@ -163,6 +163,7 @@ export default function AktProcenePage() {
         grupa,
         redovi: mere.filter(mera => Number(mera.group_id) === index + 1 && ((mera.mera ?? '').trim() !== '' || (mera.opis_i_obrazlozenje ?? '').trim() !== '')),
     })).filter(unos => unos.redovi.length > 0);
+    const f6Zakljucak = f6ZakljucakSaPodrazumevanimUnosima(fData.f6_zakljucak);
 
     return (
         <div className="mx-auto max-w-4xl px-4 py-8 print:max-w-none print:px-0 print:py-0">
@@ -320,16 +321,13 @@ export default function AktProcenePage() {
                             {F6_ZAKLJUCAK_STAVKE.map(stavka => (
                                 <Fragment key={stavka.k}>
                                     <tr>
-                                        <th scope="row" colSpan={2} className="border border-slate-800 p-2 text-left align-top">
-                                            <div className="font-semibold">{stavka.naslov}</div>
-                                            <div className="mt-1 space-y-1 font-normal">
-                                                {stavka.opisi.map(opis => <p key={opis}>{opis}</p>)}
-                                            </div>
+                                        <th scope="row" colSpan={2} className="border border-slate-800 p-2 text-left align-top font-semibold">
+                                            {stavka.naslov}
                                         </th>
                                     </tr>
                                     <tr>
                                         <td colSpan={2} className="border border-slate-800 p-2 align-top">
-                                            {vrednost(fData.f6_zakljucak?.[stavka.k])}
+                                            {vrednost(f6Zakljucak[stavka.k])}
                                         </td>
                                     </tr>
                                 </Fragment>
