@@ -140,7 +140,13 @@ export default function PrilogChTable({ procenaId, readOnly = false, resourceSco
                         </tr>
                     </thead>
                     <tbody>
-                        {REQUIREMENTS.map((req, index) => (
+                        {REQUIREMENTS.map((req, index) => {
+                            const field = req.key as keyof TableChData;
+                            const value = data[field];
+                            const allowedValues = req.type === 'strict' ? [0, 5] : [1, 2, 3, 4, 5];
+                            const isLegacyValue = value != null && !allowedValues.includes(value);
+
+                            return (
                             <tr key={req.key} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                                 <td className="border p-2">{req.label}</td>
                                 <td className="border p-2 text-center">
@@ -157,25 +163,13 @@ export default function PrilogChTable({ procenaId, readOnly = false, resourceSco
                                     ) : (
                                         <select
                                             className="w-full p-1 border rounded text-center"
-                                            value={data[req.key as keyof TableChData] ?? ''}
-                                            onChange={(e) => handleScoreChange(req.key as keyof TableChData, parseFloat(e.target.value))}
+                                            value={value ?? ''}
+                                            onChange={(e) => handleScoreChange(field, parseFloat(e.target.value))}
                                             disabled={readOnly}
                                         >
                                             <option value="" disabled>-</option>
-                                            {req.type === 'strict' ? (
-                                                <>
-                                                    <option value="0">0</option>
-                                                    <option value="5">5</option>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <option value="1">1</option>
-                                                    <option value="2">2</option>
-                                                    <option value="3">3</option>
-                                                    <option value="4">4</option>
-                                                    <option value="5">5</option>
-                                                </>
-                                            )}
+                                            {isLegacyValue && <option value={value!} disabled>{value} (сачувано из претходне процене)</option>}
+                                            {allowedValues.map(option => <option key={option} value={option}>{option}</option>)}
                                         </select>
                                     )}
                                 </td>
@@ -183,12 +177,13 @@ export default function PrilogChTable({ procenaId, readOnly = false, resourceSco
                                     {resourceScore.toFixed(2)}
                                 </td>
                                 <td className="border p-2 text-center font-bold">
-                                    {getFulfillment(req.key as keyof TableChData) !== null
-                                        ? ((getFulfillment(req.key as keyof TableChData) || 0) * resourceScore).toFixed(2)
+                                    {getFulfillment(field) !== null
+                                        ? ((getFulfillment(field) || 0) * resourceScore).toFixed(2)
                                         : '-'}
                                 </td>
                             </tr>
-                        ))}
+                            );
+                        })}
 
                         <tr className="bg-green-100 border-t-2 border-green-300 font-bold">
                             <td className="border p-3 text-right" colSpan={3}>

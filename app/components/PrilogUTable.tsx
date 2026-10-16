@@ -119,26 +119,33 @@ export default function PrilogUTable({ procenaId, readOnly = false, onScoreUpdat
                             </td>
                         </tr>
 
-                        {REQ_CONFIG.slice(0, 2).map((req) => (
+                        {REQ_CONFIG.slice(0, 2).map((req) => {
+                            const field = req.key as keyof TableUData;
+                            const value = data[field];
+                            const allowedValues = [0, 5];
+                            const isLegacyValue = value != null && !allowedValues.includes(value);
+
+                            return (
                             <tr key={req.key} className="bg-white">
                                 <td className="border p-2">{req.label}</td>
                                 <td className="border p-2 text-center">
                                     <select
                                         className="w-full p-1 border rounded text-center"
-                                        value={data[req.key as keyof TableUData] ?? ''}
-                                        onChange={(e) => handleScoreChange(req.key as keyof TableUData, parseInt(e.target.value))}
+                                        value={value ?? ''}
+                                        onChange={(e) => handleScoreChange(field, parseInt(e.target.value))}
                                         disabled={readOnly}
                                     >
                                         <option value="" disabled>-</option>
-                                        <option value="0">0</option>
-                                        <option value="5">5</option>
+                                        {isLegacyValue && <option value={value!} disabled>{value} (сачувано из претходне процене)</option>}
+                                        {allowedValues.map(option => <option key={option} value={option}>{option}</option>)}
                                     </select>
                                 </td>
                                 <td className="border p-2 text-center font-bold">
-                                    {data[req.key as keyof TableUData] ?? '-'}
+                                    {value ?? '-'}
                                 </td>
                             </tr>
-                        ))}
+                            );
+                        })}
 
                         {/* HEADER: PREPORUKE (RECOMMENDED) */}
                         <tr className="bg-green-50 font-bold text-green-900">
@@ -147,27 +154,35 @@ export default function PrilogUTable({ procenaId, readOnly = false, onScoreUpdat
                             </td>
                         </tr>
 
-                        {REQ_CONFIG.slice(2).map((req) => (
+                        {REQ_CONFIG.slice(2).map((req) => {
+                            const field = req.key as keyof TableUData;
+                            const value = data[field];
+                            const allowedValues = req.type === 'oneOrFive' ? [1, 5] : [1, 2, 3, 4, 5];
+                            const isLegacyValue = value != null && !allowedValues.includes(value);
+
+                            return (
                             <tr key={req.key} className="bg-white">
                                 <td className="border p-2">{req.label}</td>
                                 <td className="border p-2 text-center">
                                     <select
                                         className="w-full p-1 border rounded text-center"
-                                        value={data[req.key as keyof TableUData] ?? ''}
-                                        onChange={(e) => handleScoreChange(req.key as keyof TableUData, parseInt(e.target.value))}
+                                        value={value ?? ''}
+                                        onChange={(e) => handleScoreChange(field, parseInt(e.target.value))}
                                         disabled={readOnly}
                                     >
                                         <option value="" disabled>-</option>
-                                        {(req.type === 'oneOrFive' ? [1, 5] : [1, 2, 3, 4, 5]).map(v => (
+                                        {isLegacyValue && <option value={value!} disabled>{value} (сачувано из претходне процене)</option>}
+                                        {allowedValues.map(v => (
                                             <option key={v} value={v}>{v}</option>
                                         ))}
                                     </select>
                                 </td>
                                 <td className="border p-2 text-center font-bold">
-                                    {data[req.key as keyof TableUData] ?? '-'}
+                                    {value ?? '-'}
                                 </td>
                             </tr>
-                        ))}
+                            );
+                        })}
 
                         <tr className="bg-purple-100 border-t-2 border-purple-300 font-bold">
                             <td className="border p-3 text-right" colSpan={2}>
