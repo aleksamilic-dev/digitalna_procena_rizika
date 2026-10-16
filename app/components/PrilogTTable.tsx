@@ -84,11 +84,16 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
     if (loading) return <div>Учитавање података...</div>;
 
     const getScoreColor = (score: number | null) => {
-        if (!score) return 'bg-white';
+        if (score === null) return 'bg-white';
         if (score >= 4) return 'bg-green-100 text-green-800';
         if (score >= 3) return 'bg-yellow-100 text-yellow-800';
         return 'bg-red-100 text-red-800';
     };
+
+    const getLegacyOption = (score: number | null, allowedValues: number[]) =>
+        score !== null && !allowedValues.includes(score)
+            ? <option value={score} disabled>{score} (сачувано из претходне процене)</option>
+            : null;
 
     return (
         <div className="space-y-8 mt-8">
@@ -140,11 +145,12 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
                                 <td className="border border-gray-300 p-2">
                                     <select
                                         className="w-full p-1 border rounded"
-                                        value={data.kapital_score || ''}
+                                        value={data.kapital_score ?? ''}
                                         onChange={(e) => handleScoreChange('kapital_score', parseInt(e.target.value))}
                                         disabled={readOnly}
                                     >
                                         <option value="" disabled>Изаберите...</option>
+                                        {getLegacyOption(data.kapital_score, [1, 2, 3, 4, 5])}
                                         <option value="1">= 100</option>
                                         <option value="2">&gt; 100 &lt;= 3.000.000</option>
                                         <option value="3">&gt; 3.000.000 &lt;= 10.000.000</option>
@@ -153,7 +159,7 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
                                     </select>
                                 </td>
                                 <td className={`border border-gray-300 p-2 text-center font-bold ${getScoreColor(data.kapital_score)}`}>
-                                    {data.kapital_score || '-'}
+                                    {data.kapital_score ?? '-'}
                                 </td>
                             </tr>
 
@@ -165,11 +171,12 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
                                 <td className="border border-gray-300 p-2">
                                     <select
                                         className="w-full p-1 border rounded"
-                                        value={data.menadzeri_score || ''}
+                                        value={data.menadzeri_score ?? ''}
                                         onChange={(e) => handleScoreChange('menadzeri_score', parseInt(e.target.value))}
                                         disabled={readOnly}
                                     >
                                         <option value="" disabled>Изаберите...</option>
+                                        {getLegacyOption(data.menadzeri_score, [2, 3, 4, 5])}
                                         <option value="2">1 са ССС</option>
                                         <option value="4">1 са ВСС</option>
                                         <option value="3">&gt; 1 са ССС</option>
@@ -177,7 +184,7 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
                                     </select>
                                 </td>
                                 <td className={`border border-gray-300 p-2 text-center font-bold ${getScoreColor(data.menadzeri_score)}`}>
-                                    {data.menadzeri_score || '-'}
+                                    {data.menadzeri_score ?? '-'}
                                 </td>
                             </tr>
 
@@ -189,11 +196,12 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
                                 <td className="border border-gray-300 p-2">
                                     <select
                                         className="w-full p-1 border rounded"
-                                        value={data.osiguranje_score || ''}
+                                        value={data.osiguranje_score ?? ''}
                                         onChange={(e) => handleScoreChange('osiguranje_score', parseInt(e.target.value))}
                                         disabled={readOnly}
                                     >
                                         <option value="" disabled>Изаберите...</option>
+                                        {getLegacyOption(data.osiguranje_score, [1, 2, 3, 4, 5])}
                                         <option value="1">&lt;= 3.000.000</option>
                                         <option value="2">&gt; 3.000.000 &lt;= 6.000.000</option>
                                         <option value="3">&gt; 6.000.000 &lt;= 10.000.000</option>
@@ -202,7 +210,7 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
                                     </select>
                                 </td>
                                 <td className={`border border-gray-300 p-2 text-center font-bold ${getScoreColor(data.osiguranje_score)}`}>
-                                    {data.osiguranje_score || '-'}
+                                    {data.osiguranje_score ?? '-'}
                                 </td>
                             </tr>
 
@@ -214,11 +222,12 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
                                 <td className="border border-gray-300 p-2">
                                     <select
                                         className="w-full p-1 border rounded"
-                                        value={data.registar_score || ''}
+                                        value={data.registar_score ?? ''}
                                         onChange={(e) => handleScoreChange('registar_score', parseInt(e.target.value))}
                                         disabled={readOnly}
                                     >
                                         <option value="" disabled>Изаберите...</option>
+                                        {getLegacyOption(data.registar_score, [1, 2, 3, 4, 5])}
                                         <option value="1">&lt;= 2</option>
                                         <option value="2">&gt; 2 &lt;= 3</option>
                                         <option value="3">&gt; 3 &lt;= 10</option>
@@ -227,7 +236,7 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
                                     </select>
                                 </td>
                                 <td className={`border border-gray-300 p-2 text-center font-bold ${getScoreColor(data.registar_score)}`}>
-                                    {data.registar_score || '-'}
+                                    {data.registar_score ?? '-'}
                                 </td>
                             </tr>
 
@@ -239,18 +248,19 @@ export default function PrilogTTable({ procenaId, readOnly = false, onResourceSc
                                 <td className="border border-gray-300 p-2">
                                     <select
                                         className="w-full p-1 border rounded"
-                                        value={data.zarada_score || ''}
+                                        value={data.zarada_score ?? ''}
                                         onChange={(e) => handleScoreChange('zarada_score', parseInt(e.target.value))}
                                         disabled={readOnly}
                                     >
                                         <option value="" disabled>Изаберите...</option>
+                                        {getLegacyOption(data.zarada_score, [1, 3, 5])}
                                         <option value="1">Испод републичког просека</option>
                                         <option value="3">±10% од републичког просека</option>
                                         <option value="5">&gt;10% изнад републичког просека</option>
                                     </select>
                                 </td>
                                 <td className={`border border-gray-300 p-2 text-center font-bold ${getScoreColor(data.zarada_score)}`}>
-                                    {data.zarada_score || '-'}
+                                    {data.zarada_score ?? '-'}
                                 </td>
                             </tr>
 
