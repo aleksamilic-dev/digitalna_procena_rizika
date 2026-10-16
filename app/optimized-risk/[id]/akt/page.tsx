@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { normalizePrilogMRow, type PrilogMData } from '../../../data/riskDataLoader';
 import { RISK_GROUPS } from '../../../data/riskGroups';
 import { btn, card, Spinner } from '../../../components/ui';
+import { F6_ZAKLJUCAK_STAVKE } from '../../../components/PrilogF/PrilogTypes';
 
 interface ProcenaInfo {
     naziv: string;
@@ -50,14 +51,6 @@ const INTERNI_KONTEKST = [
     { k: 'nacin_organizovanja', l: 'в) начин организовања пословних процеса' },
     { k: 'nacin_stepen_zastite', l: 'г) начин и степен заштите лица, имовине и пословања' },
     { k: 'delovanje_zainteresovanih', l: 'д) деловање интерних заинтересованих страна' },
-];
-
-const ZAKLJUCAK = [
-    { k: 'tacka_1', l: '1. Оцена и приказ нивоа и категорије агрегатног ризика посматране организације' },
-    { k: 'tacka_2', l: '2. Закључни приказ нивоа и категорије ризика по огранцима/издвојеним местима' },
-    { k: 'tacka_3', l: '3. Закључни приказ стања заштите' },
-    { k: 'tacka_4', l: '4. Преглед нових мера заштите' },
-    { k: 'tacka_5', l: '5. Активности које треба да предузима и одржава менаџмент у функцији квалитета обезбеђења' },
 ];
 
 const KATEGORIJE = [
@@ -324,8 +317,22 @@ export default function AktProcenePage() {
                 <Sekcija naslov="Табела Ф.6 – Закључак процене ризика">
                     <table className="w-full border-collapse">
                         <tbody>
-                            {ZAKLJUCAK.map(tacka => (
-                                <Red key={tacka.k} labela={tacka.l} tekst={fData.f6_zakljucak?.[tacka.k]} />
+                            {F6_ZAKLJUCAK_STAVKE.map(stavka => (
+                                <Fragment key={stavka.k}>
+                                    <tr>
+                                        <th scope="row" colSpan={2} className="border border-slate-800 p-2 text-left align-top">
+                                            <div className="font-semibold">{stavka.naslov}</div>
+                                            <div className="mt-1 space-y-1 font-normal">
+                                                {stavka.opisi.map(opis => <p key={opis}>{opis}</p>)}
+                                            </div>
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <td colSpan={2} className="border border-slate-800 p-2 align-top">
+                                            {vrednost(fData.f6_zakljucak?.[stavka.k])}
+                                        </td>
+                                    </tr>
+                                </Fragment>
                             ))}
                         </tbody>
                     </table>

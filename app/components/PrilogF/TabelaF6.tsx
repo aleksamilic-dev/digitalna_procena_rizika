@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { PrilogFData } from "./PrilogTypes";
+import { F6_ZAKLJUCAK_STAVKE, PrilogFData } from "./PrilogTypes";
 
 interface TabelaF6Props {
     data: PrilogFData;
@@ -148,11 +148,10 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                 {/* 1 */}
                 <div>
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
-                        1. Оцена и приказ нивоа и категорије агрегатног ризика посматране организације
+                        {F6_ZAKLJUCAK_STAVKE[0].naslov}
                     </div>
-                    <div className="text-sm italic text-gray-700 mb-1">
-                        Оценити ниво и категорију агрегатног ризика посматране организације<br />
-                        Приказати анализу по групама ризика са укупним подацима: ниво, категорија и прихватљивост
+                    <div className="text-sm italic text-gray-700 mb-1 space-y-1">
+                        {F6_ZAKLJUCAK_STAVKE[0].opisi.map(opis => <p key={opis}>{opis}</p>)}
                     </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"
@@ -165,11 +164,10 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                 {/* 2 */}
                 <div>
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
-                        2. Закључни приказ нивоа и категорије ризика по огранцима/издвојеним местима
+                        {F6_ZAKLJUCAK_STAVKE[1].naslov}
                     </div>
-                    <div className="text-sm italic text-gray-700 mb-1">
-                        Оценити ниво и категорију сваког штићеног простора на различитим локацијама, са оквирном инвестицијом за имплементацију мера<br />
-                        За сваку групу ризика, на основу нивоа ризика, приказати мере за поступање са ризицима
+                    <div className="text-sm italic text-gray-700 mb-1 space-y-1">
+                        {F6_ZAKLJUCAK_STAVKE[1].opisi.map(opis => <p key={opis}>{opis}</p>)}
                     </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"
@@ -182,11 +180,10 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                 {/* 3 */}
                 <div>
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
-                        3. Закључни приказ стања заштите
+                        {F6_ZAKLJUCAK_STAVKE[2].naslov}
                     </div>
-                    <div className="text-sm italic text-gray-700 mb-1">
-                        Приказ постојећег система заштите<br />
-                        Управљање обезбеђењем и начин вршења послова обезбеђења
+                    <div className="text-sm italic text-gray-700 mb-1 space-y-1">
+                        {F6_ZAKLJUCAK_STAVKE[2].opisi.map(opis => <p key={opis}>{opis}</p>)}
                     </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"
@@ -199,10 +196,10 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                 {/* 4 */}
                 <div>
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
-                        4. Преглед нових мера заштите
+                        {F6_ZAKLJUCAK_STAVKE[3].naslov}
                     </div>
                     <div className="text-sm italic text-gray-700 mb-1">
-                        Приказ нових мера заштите у функцији оптимизације, односно постизања максималне ефективности и ефикасности заштите
+                        {F6_ZAKLJUCAK_STAVKE[3].opisi[0]}
                     </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"
@@ -215,10 +212,10 @@ export default function TabelaF6({ data, onChange, readOnly = false }: TabelaF6P
                 {/* 5 */}
                 <div>
                     <div className="font-bold text-gray-900 border-b border-gray-400 pb-1 mb-2">
-                        5. Активности које треба да предузима и одржава менаџмент у функцији квалитета обезбеђења
+                        {F6_ZAKLJUCAK_STAVKE[4].naslov}
                     </div>
                     <div className="text-sm italic text-gray-700 mb-1">
-                        Имајући у виду идентификоване ризике, ниво ризика, мере за начин за поступање са ризицима, као и резултате анализе цена–корист, предочити менаџменту активности којима ће систем обезбеђења бити ефективно интегрисан у систем корпоративне безбедности.
+                        {F6_ZAKLJUCAK_STAVKE[4].opisi[0]}
                     </div>
                     <textarea
                         className="w-full h-24 border border-gray-400 p-2 text-gray-900 focus:outline-none resize-y rounded disabled:opacity-100 disabled:text-gray-900"
